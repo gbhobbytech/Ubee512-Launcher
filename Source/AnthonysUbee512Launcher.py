@@ -293,28 +293,35 @@ class UbeeLauncherApp:
         CONFIG_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def _build_ui(self) -> None:
+        """Build a compact wide layout that resizes cleanly on desktop displays."""
         self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=0)
+        self.root.rowconfigure(1, weight=1)
+        self.root.rowconfigure(2, weight=0)
 
-        top = ttk.Frame(self.root, padding=12)
-        top.grid(row=0, column=0, sticky="ew")
-        top.columnconfigure(1, weight=1)
+        self.root.geometry("1380x820")
+        self.root.minsize(1120, 680)
 
-        ttk.Label(top, text="Ubee executable").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=4)
-        ttk.Entry(top, textvariable=self.ubee_var).grid(row=0, column=1, sticky="ew", pady=4)
-        ttk.Button(top, text="Find", command=self.choose_ubee_executable).grid(row=0, column=2, padx=(8, 0), pady=4)
+        top = ttk.LabelFrame(self.root, text="Paths and launch settings", padding=(10, 8))
+        top.grid(row=0, column=0, sticky="ew", padx=10, pady=(8, 4))
+        for col in (1, 4):
+            top.columnconfigure(col, weight=1)
 
-        ttk.Label(top, text="Search root").grid(row=1, column=0, sticky="w", padx=(0, 8), pady=4)
-        ttk.Entry(top, textvariable=self.search_root_var).grid(row=1, column=1, sticky="ew", pady=4)
-        ttk.Button(top, text="Browse", command=self.choose_search_root).grid(row=1, column=2, padx=(8, 0), pady=4)
+        ttk.Label(top, text="Ubee executable").grid(row=0, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Entry(top, textvariable=self.ubee_var).grid(row=0, column=1, columnspan=4, sticky="ew", pady=2)
+        ttk.Button(top, text="Find", command=self.choose_ubee_executable, width=10).grid(row=0, column=5, padx=(6, 0), pady=2)
 
-        ttk.Label(top, text="Library path").grid(row=2, column=0, sticky="w", padx=(0, 8), pady=4)
-        ttk.Entry(top, textvariable=self.library_path_var).grid(row=2, column=1, sticky="ew", pady=4)
-        ttk.Button(top, text="Browse", command=self.choose_library_path).grid(row=2, column=2, padx=(8, 0), pady=4)
+        ttk.Label(top, text="Search root").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Entry(top, textvariable=self.search_root_var).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Button(top, text="Browse", command=self.choose_search_root, width=10).grid(row=1, column=2, padx=(6, 14), pady=2)
+
+        ttk.Label(top, text="Library path").grid(row=1, column=3, sticky="w", padx=(0, 6), pady=2)
+        ttk.Entry(top, textvariable=self.library_path_var).grid(row=1, column=4, sticky="ew", pady=2)
+        ttk.Button(top, text="Browse", command=self.choose_library_path, width=10).grid(row=1, column=5, padx=(6, 0), pady=2)
 
         controls = ttk.Frame(top)
-        controls.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(8, 0))
-        controls.columnconfigure(7, weight=1)
+        controls.grid(row=2, column=0, columnspan=6, sticky="ew", pady=(6, 0))
+        controls.columnconfigure(9, weight=1)
 
         ttk.Label(controls, text="Boot mode").grid(row=0, column=0, sticky="w")
         ttk.Combobox(
@@ -323,9 +330,9 @@ class UbeeLauncherApp:
             values=BOOT_MODES,
             state="readonly",
             width=22,
-        ).grid(row=0, column=1, sticky="w", padx=(8, 16))
+        ).grid(row=0, column=1, sticky="w", padx=(6, 14))
 
-        self.model_label = ttk.Label(controls, text="Model preset")
+        self.model_label = ttk.Label(controls, text="Microbee model")
         self.model_label.grid(row=0, column=2, sticky="w")
         self.model_entry = ttk.Combobox(
             controls,
@@ -334,60 +341,63 @@ class UbeeLauncherApp:
             state="readonly",
             width=10,
         )
-        self.model_entry.grid(row=0, column=3, sticky="w", padx=(8, 16))
+        self.model_entry.grid(row=0, column=3, sticky="w", padx=(6, 14))
 
         self.rom256k_label = ttk.Label(controls, text="rom256k")
         self.rom256k_label.grid(row=0, column=4, sticky="w")
         self.rom256k_entry = ttk.Entry(controls, textvariable=self.rom256k_var, width=10)
-        self.rom256k_entry.grid(row=0, column=5, sticky="w", padx=(8, 16))
+        self.rom256k_entry.grid(row=0, column=5, sticky="w", padx=(6, 14))
 
-        ttk.Checkbutton(controls, text="Include hidden folders", variable=self.include_hidden_var).grid(
-            row=0, column=6, sticky="w"
+        ttk.Checkbutton(controls, text="Include hidden", variable=self.include_hidden_var).grid(
+            row=0, column=6, sticky="w", padx=(0, 10)
         )
         ttk.Checkbutton(
             controls,
             text="Advanced mode",
             variable=self.advanced_mode_var,
             command=self.update_mode_ui,
-        ).grid(row=0, column=7, sticky="w", padx=(12, 0))
-        ttk.Button(controls, text="Scan files", command=self.scan_files).grid(row=0, column=8, sticky="e")
+        ).grid(row=0, column=7, sticky="w", padx=(0, 10))
+        ttk.Button(controls, text="Scan files", command=self.scan_files, width=12).grid(row=0, column=8, sticky="w")
+        ttk.Label(controls, textvariable=self.status_var).grid(row=0, column=9, sticky="e", padx=(12, 0))
 
         middle = ttk.Panedwindow(self.root, orient=tk.HORIZONTAL)
-        middle.grid(row=1, column=0, sticky="nsew", padx=12, pady=8)
+        middle.grid(row=1, column=0, sticky="nsew", padx=10, pady=4)
 
-        files_area = ttk.Frame(middle, padding=8)
-        right = ttk.Frame(middle, padding=8)
-        middle.add(files_area, weight=3)
-        middle.add(right, weight=2)
+        files_area = ttk.LabelFrame(middle, text="Media library", padding=8)
+        right = ttk.Frame(middle, padding=0)
+        middle.add(files_area, weight=2)
+        middle.add(right, weight=5)
 
-        files_area.columnconfigure(0, weight=3)
-        files_area.columnconfigure(1, weight=2)
-        files_area.rowconfigure(1, weight=3)
+        files_area.columnconfigure(0, weight=1)
+        files_area.columnconfigure(1, weight=0)
+        files_area.columnconfigure(2, weight=1)
+        files_area.columnconfigure(3, weight=0)
+        files_area.rowconfigure(1, weight=1)
         files_area.rowconfigure(3, weight=1)
-        right.columnconfigure(0, weight=1)
-        right.rowconfigure(1, weight=1)
 
         ttk.Label(files_area, text="Disk images", font=("TkDefaultFont", 10, "bold")).grid(row=0, column=0, sticky="w")
-        self.disk_list = tk.Listbox(files_area, exportselection=False, height=22)
-        self.disk_list.grid(row=1, column=0, rowspan=4, sticky="nsew", pady=(6, 0))
+        self.disk_list = tk.Listbox(files_area, exportselection=False, height=18)
+        self.disk_list.grid(row=1, column=0, rowspan=3, sticky="nsew", pady=(4, 0), padx=(0, 4))
         disk_scroll = ttk.Scrollbar(files_area, orient="vertical", command=self.disk_list.yview)
-        disk_scroll.grid(row=1, column=1, rowspan=4, sticky="ns", pady=(6, 0))
+        disk_scroll.grid(row=1, column=1, rowspan=3, sticky="ns", pady=(4, 0), padx=(0, 8))
         self.disk_list.configure(yscrollcommand=disk_scroll.set)
 
         ttk.Label(files_area, text="Tape files", font=("TkDefaultFont", 10, "bold")).grid(row=0, column=2, sticky="w")
-        self.tape_list = tk.Listbox(files_area, exportselection=False, height=10)
-        self.tape_list.grid(row=1, column=2, sticky="nsew", padx=(12, 0), pady=(6, 0))
+        self.tape_list = tk.Listbox(files_area, exportselection=False, height=8)
+        self.tape_list.grid(row=1, column=2, sticky="nsew", pady=(4, 8), padx=(0, 4))
         tape_scroll = ttk.Scrollbar(files_area, orient="vertical", command=self.tape_list.yview)
-        tape_scroll.grid(row=1, column=3, sticky="ns", pady=(6, 0))
+        tape_scroll.grid(row=1, column=3, sticky="ns", pady=(4, 8))
         self.tape_list.configure(yscrollcommand=tape_scroll.set)
 
-        ttk.Label(files_area, text="ROMs", font=("TkDefaultFont", 10, "bold")).grid(row=2, column=2, sticky="w", padx=(12, 0), pady=(12, 0))
-        self.rom_list = tk.Listbox(files_area, exportselection=False, height=6)
-        self.rom_list.grid(row=3, column=2, sticky="nsew", padx=(12, 0), pady=(6, 0))
+        ttk.Label(files_area, text="ROMs", font=("TkDefaultFont", 10, "bold")).grid(row=2, column=2, sticky="w")
+        self.rom_list = tk.Listbox(files_area, exportselection=False, height=8)
+        self.rom_list.grid(row=3, column=2, sticky="nsew", pady=(4, 0), padx=(0, 4))
         rom_scroll = ttk.Scrollbar(files_area, orient="vertical", command=self.rom_list.yview)
-        rom_scroll.grid(row=3, column=3, sticky="ns", pady=(6, 0))
+        rom_scroll.grid(row=3, column=3, sticky="ns", pady=(4, 0))
         self.rom_list.configure(yscrollcommand=rom_scroll.set)
 
+        right.columnconfigure(0, weight=1)
+        right.rowconfigure(0, weight=1)
         self.workflow = ttk.Notebook(right)
         self.workflow.grid(row=0, column=0, sticky="nsew")
 
@@ -399,73 +409,66 @@ class UbeeLauncherApp:
         self._build_printer_tab(self.printer_tab)
         self._build_scrollable_cpm_tab(self.cpm_tab)
 
-        bottom = ttk.Frame(self.root, padding=12)
+        bottom = ttk.Frame(self.root, padding=(10, 4, 10, 8))
         bottom.grid(row=2, column=0, sticky="ew")
-        bottom.columnconfigure(0, weight=1)
+        bottom.columnconfigure(0, weight=3)
+        bottom.columnconfigure(1, weight=4)
 
-        mounted_panel = ttk.LabelFrame(bottom, text="Mounted floppy drives", padding=10)
-        mounted_panel.grid(row=0, column=0, sticky="ew")
-        for col in range(4):
-            mounted_panel.columnconfigure(col, weight=1)
-        mounted_panel.columnconfigure(4, weight=2)
+        mounted_panel = ttk.LabelFrame(bottom, text="Mounted floppy drives", padding=(8, 6))
+        mounted_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        mounted_panel.columnconfigure(1, weight=1)
+        mounted_panel.columnconfigure(4, weight=1)
 
-        for col, drive in enumerate(("A", "B", "C", "D")):
-            drive_frame = ttk.Frame(mounted_panel)
-            drive_frame.grid(row=0, column=col, sticky="nsew", padx=(0, 10) if col < 3 else (0, 16))
-            drive_frame.columnconfigure(0, weight=1)
-            ttk.Label(drive_frame, text=f"{drive}:").grid(row=0, column=0, sticky="w")
-            ttk.Entry(drive_frame, textvariable=self.mounted_drive_display_vars[drive], state="readonly").grid(
-                row=1, column=0, sticky="ew", pady=(4, 6)
+        for idx, drive in enumerate(("A", "B", "C", "D")):
+            row = idx // 2
+            col_offset = 0 if idx % 2 == 0 else 3
+            ttk.Label(mounted_panel, text=f"{drive}:").grid(row=row, column=col_offset, sticky="w", padx=(0, 4), pady=3)
+            ttk.Entry(mounted_panel, textvariable=self.mounted_drive_display_vars[drive], state="readonly", width=16).grid(
+                row=row, column=col_offset + 1, sticky="ew", pady=3
             )
-            button_row = ttk.Frame(drive_frame)
-            button_row.grid(row=2, column=0, sticky="ew")
-            button_row.columnconfigure(0, weight=1)
-            button_row.columnconfigure(1, weight=1)
+            drive_buttons = ttk.Frame(mounted_panel)
+            drive_buttons.grid(row=row, column=col_offset + 2, sticky="w", padx=(4, 10), pady=3)
             ttk.Button(
-                button_row,
-                text="Mount selected",
+                drive_buttons,
+                text="Mount",
                 command=lambda d=drive: self.mount_selected_to_drive(d),
-            ).grid(row=0, column=0, sticky="ew", padx=(0, 4))
+                width=7,
+            ).pack(side=tk.LEFT)
             ttk.Button(
-                button_row,
+                drive_buttons,
                 text="Clear",
                 command=lambda d=drive: self.clear_mounted_drive(d),
-            ).grid(row=0, column=1, sticky="ew")
+                width=6,
+            ).pack(side=tk.LEFT, padx=(4, 0))
 
-        clear_all_frame = ttk.Frame(mounted_panel)
-        clear_all_frame.grid(row=0, column=4, sticky="nsew")
-        clear_all_frame.rowconfigure(0, weight=1)
-        clear_all_frame.columnconfigure(0, weight=1)
         ttk.Button(
-            clear_all_frame,
-            text="Clear all mounted drives",
+            mounted_panel,
+            text="Clear all",
             command=self.clear_all_mounted_drives,
-        ).grid(row=0, column=0, sticky="nsew", padx=(8, 0))
+            width=10,
+        ).grid(row=0, column=6, rowspan=2, sticky="ns", padx=(4, 0), pady=3)
 
-        self.args_frame = ttk.Frame(bottom)
-        self.args_frame.grid(row=1, column=0, sticky="ew", pady=(12, 0))
-        self.args_frame.columnconfigure(1, weight=1)
+        launch_panel = ttk.LabelFrame(bottom, text="Launch command", padding=(8, 6))
+        launch_panel.grid(row=0, column=1, sticky="nsew")
+        launch_panel.columnconfigure(1, weight=1)
 
-        self.extra_args_label = ttk.Label(self.args_frame, text="Extra args")
-        self.extra_args_label.grid(row=0, column=0, sticky="nw", padx=(0, 8))
-        self.extra_args_entry = ttk.Entry(self.args_frame, textvariable=self.extra_args_var)
-        self.extra_args_entry.grid(row=0, column=1, sticky="ew")
+        self.args_frame = launch_panel
 
-        ttk.Label(self.args_frame, text="ROM1 file").grid(row=1, column=0, sticky="nw", padx=(0, 8), pady=(10, 0))
-        ttk.Entry(self.args_frame, textvariable=self.default_rom1_var).grid(row=1, column=1, sticky="ew", pady=(10, 0))
+        self.extra_args_label = ttk.Label(launch_panel, text="Extra args")
+        self.extra_args_label.grid(row=0, column=0, sticky="w", padx=(0, 6), pady=2)
+        self.extra_args_entry = ttk.Entry(launch_panel, textvariable=self.extra_args_var)
+        self.extra_args_entry.grid(row=0, column=1, columnspan=3, sticky="ew", pady=2)
 
-        ttk.Label(self.args_frame, text="Command preview").grid(row=2, column=0, sticky="nw", padx=(0, 8), pady=(10, 0))
-        preview = ttk.Entry(self.args_frame, textvariable=self.command_preview_var, state="readonly")
-        preview.grid(row=2, column=1, sticky="ew", pady=(10, 0))
+        ttk.Label(launch_panel, text="ROM1 file").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Entry(launch_panel, textvariable=self.default_rom1_var).grid(row=1, column=1, columnspan=3, sticky="ew", pady=2)
 
-        buttons = ttk.Frame(self.args_frame)
-        buttons.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(12, 0))
-        buttons.columnconfigure(1, weight=1)
+        ttk.Label(launch_panel, text="Command preview").grid(row=2, column=0, sticky="w", padx=(0, 6), pady=2)
+        preview = ttk.Entry(launch_panel, textvariable=self.command_preview_var, state="readonly")
+        preview.grid(row=2, column=1, columnspan=3, sticky="ew", pady=2)
 
-        ttk.Button(buttons, text="Copy command", command=self.copy_command).grid(row=0, column=0, sticky="w")
-        ttk.Button(buttons, text="Keyboard Help", command=self.show_keyboard_help).grid(row=0, column=1, sticky="w", padx=(12, 0))
-        ttk.Label(buttons, textvariable=self.status_var).grid(row=0, column=2, sticky="w", padx=12)
-        ttk.Button(buttons, text="Launch Ubee512", command=self.launch_ubee).grid(row=0, column=3, sticky="e")
+        ttk.Button(launch_panel, text="Copy command", command=self.copy_command).grid(row=3, column=0, sticky="w", pady=(6, 0))
+        ttk.Button(launch_panel, text="Keyboard Help", command=self.show_keyboard_help).grid(row=3, column=1, sticky="w", pady=(6, 0), padx=(8, 0))
+        ttk.Button(launch_panel, text="Launch Ubee512", command=self.launch_ubee).grid(row=3, column=3, sticky="e", pady=(6, 0))
 
 
     def update_mode_ui(self) -> None:
