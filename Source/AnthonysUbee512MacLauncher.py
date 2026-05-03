@@ -223,7 +223,7 @@ class UbeeLauncherApp:
         self.rom256k_var = tk.StringVar(value=self.config.get("rom256k", DEFAULT_CONFIG["rom256k"]))
         self.boot_mode_var = tk.StringVar(value=self.config.get("last_boot_mode", DEFAULT_CONFIG["last_boot_mode"]))
         self.extra_args_var = tk.StringVar(value=self.config.get("extra_args", DEFAULT_CONFIG["extra_args"]))
-        self.status_var = tk.StringVar(value="Use Mac Defaults, scan, select a disk, then launch.")
+        self.status_var = tk.StringVar(value="Set paths>scan>select>disk>launch.")
         self.command_preview_var = tk.StringVar(value="")
         self.default_rom1_var = tk.StringVar(value=self.config.get("last_rom", DEFAULT_CONFIG["last_rom"]))
         self.include_hidden_var = tk.BooleanVar(value=self.config.get("include_hidden", DEFAULT_CONFIG["include_hidden"]))
@@ -373,10 +373,10 @@ class UbeeLauncherApp:
             command=self.update_mode_ui,
         ).grid(row=0, column=7, sticky="w", padx=(0, 10))
         ttk.Button(controls, text="Scan files", command=self.scan_files, width=12).grid(row=0, column=8, sticky="w")
-        ttk.Button(controls, text="Use Mac Defaults", command=self.apply_mac_defaults, width=15).grid(row=0, column=9, sticky="w", padx=(8, 0))
-        ttk.Button(controls, text="Check Setup", command=self.check_mac_setup, width=12).grid(row=0, column=10, sticky="w", padx=(8, 0))
+        #ttk.Button(controls, text="Use Mac Defaults", command=self.apply_mac_defaults, width=15).grid(row=0, column=9, sticky="w", padx=(8, 0))
+        #ttk.Button(controls, text="Check Setup", command=self.check_mac_setup, width=12).grid(row=0, column=10, sticky="w", padx=(8, 0))
         ttk.Button(controls, text="Reveal Data", command=self.reveal_user_data_folder, width=11).grid(row=0, column=11, sticky="w", padx=(8, 0))
-        ttk.Label(controls, textvariable=self.status_var).grid(row=0, column=12, sticky="e", padx=(12, 0))
+        #ttk.Label(controls, textvariable=self.status_var).grid(row=0, column=12, sticky="e", padx=(12, 0))
 
         middle = ttk.Panedwindow(self.root, orient=tk.HORIZONTAL)
         middle.grid(row=1, column=0, sticky="nsew", padx=10, pady=4)
@@ -466,6 +466,12 @@ class UbeeLauncherApp:
             width=10,
         ).grid(row=0, column=6, rowspan=2, sticky="ns", padx=(4, 0), pady=3)
 
+        ttk.Label(
+            mounted_panel,
+            textvariable=self.status_var,
+            anchor="w",
+        ).grid(row=2, column=0, columnspan=7, sticky="ew", pady=(8, 0))
+
         launch_panel = ttk.LabelFrame(bottom, text="Launch command", padding=(8, 6))
         launch_panel.grid(row=0, column=1, sticky="nsew")
         launch_panel.columnconfigure(1, weight=1)
@@ -477,7 +483,7 @@ class UbeeLauncherApp:
         self.extra_args_entry = ttk.Entry(launch_panel, textvariable=self.extra_args_var)
         self.extra_args_entry.grid(row=0, column=1, columnspan=3, sticky="ew", pady=2)
 
-        ttk.Label(launch_panel, text="Default ROM1").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Label(launch_panel, text="ROM1 file").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
         ttk.Entry(launch_panel, textvariable=self.default_rom1_var).grid(row=1, column=1, columnspan=3, sticky="ew", pady=2)
 
         ttk.Label(launch_panel, text="Command preview").grid(row=2, column=0, sticky="w", padx=(0, 6), pady=2)
@@ -540,7 +546,7 @@ class UbeeLauncherApp:
 
         self.include_hidden_var.trace_add("write", lambda *_: self.refresh_command_preview())
         self.printer_mode_var.trace_add("write", lambda *_: self.update_printer_mode_ui())
-        self.rom_list.bind("<<ListboxSelect>>", lambda _event: self.refresh_command_preview())
+        self.rom_list.bind("<<ListboxSelect>>", self.on_rom_selection_changed)
         self.disk_list.bind("<<ListboxSelect>>", self.on_disk_selection_changed)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -887,6 +893,13 @@ class UbeeLauncherApp:
     def on_disk_selection_changed(self, _event=None) -> None:
         self.refresh_command_preview()
         self.update_current_cpm_selection()
+        
+    def on_rom_selection_changed(self, _event=None) -> None:
+        rom = self.get_selected_rom_path()
+        if rom is not None:
+            self.default_rom1_var.set(str(rom))
+            self.status_var.set(f"Selected ROM1: {rom.name}")
+        self.refresh_command_preview()
 
     def update_mounted_drive_displays(self) -> None:
         for drive in ("A", "B", "C", "D"):
