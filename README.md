@@ -25,6 +25,15 @@ ROMs, disk images, emulator binaries, and third-party tools may have their own l
 
 ## Windows
 
+Notes
+
+The Windows version uses Windows-specific path handling and opens files/folders using Windows system calls.
+
+The CP/M tools should be stored together, for example:
+
+E:\ubee512\tools\cpmtools-2.10\
+
+The diskdefs file must be in the same folder as cpmls.exe and cpmcp.exe. The launcher runs these tools from their own folder so that diskdefs can be found correctly.
 Open the `builds/windows/` folder and run the launcher executable.
 
 ## Linux
