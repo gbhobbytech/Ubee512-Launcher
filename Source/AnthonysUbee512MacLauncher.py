@@ -996,6 +996,10 @@ class UbeeLauncherApp:
                 else:
                     cmd.append(f"--print={printer_output}")
 
+        model = self.model_var.get().strip()
+        if model:
+            cmd.append(f"--model={model}")
+
         boot_mode = self.boot_mode_var.get().strip()
         disk = self.get_selected_disk_path()
         rom256k = self.rom256k_var.get().strip()
