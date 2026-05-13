@@ -7,3 +7,9 @@ __pycache__/
 .DS_Store
 *.app
 *.zipbuild/
+
+.venv/
+build/
+dist/
+*.spec
+__pycache__/
