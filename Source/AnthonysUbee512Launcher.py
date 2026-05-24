@@ -25,7 +25,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-VERSION = "1_5h"
+VERSION = "1_5i"
 APP_NAME = f"Anthony's Ubee512 Launcher {VERSION}"
 CONFIG_DIR = Path.home() / ".config" / "ubee512-launcher"
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -57,7 +57,6 @@ DISK_EXTENSIONS = {
 }
 
 TAPE_EXTENSIONS = {
-    ".mwb",
     ".tap",
     ".wav",
 }
@@ -82,8 +81,8 @@ IDE_EXTENSIONS = {
 
 BOOT_MODES = [
     "Auto / plain launch",
-    "CF/IDE boot",
     "Model select",
+    "IDE/CF boot",
     "Custom arguments only",
 ]
 
@@ -170,9 +169,9 @@ MODEL_ROM_ALIAS_PREFIXES = {
 }
 
 TAPE_MODES = [
-    "Off",
-    "WAV input (--tapei)",
-    "TAP input (--tapfilei)",
+    "Auto",
+    "WAV",
+    "TAP",
 ]
 
 CPM_FORMAT_PRESETS = [
@@ -200,7 +199,7 @@ DEFAULT_CONFIG = {
     "last_boot_mode": "Auto / plain launch",
     "last_rom": "",
     "last_disk": "",
-    "tape_mode": "Off",
+    "tape_mode": "Auto",
     "mounted_tape": "",
     "printer_output_file": str(DEFAULT_PRINTER_FILE),
     "printer_mode": "Off",
@@ -211,7 +210,6 @@ DEFAULT_CONFIG = {
     "cpm_filename": "*.*",
     "cpm_target_name": "",
     "host_export_dir": str(DEFAULT_HOST_EXPORT_DIR),
-    "include_hidden": True,
     "mounted_drive_a": "",
     "mounted_drive_b": "",
     "mounted_drive_c": "",
@@ -231,6 +229,40 @@ class ScanResults:
 def has_extension(path: Path, extensions: set[str]) -> bool:
     lower_name = path.name.lower()
     return any(lower_name.endswith(ext) for ext in extensions)
+
+
+class ToolTip:
+    """Small hover tooltip for brief contextual help."""
+
+    def __init__(self, widget: tk.Widget, text: str) -> None:
+        self.widget = widget
+        self.text = text
+        self.tip_window: tk.Toplevel | None = None
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+
+    def show(self, _event=None) -> None:
+        if self.tip_window or not self.text:
+            return
+        x = self.widget.winfo_rootx() + 18
+        y = self.widget.winfo_rooty() + 18
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = ttk.Label(
+            tw,
+            text=self.text,
+            justify=tk.LEFT,
+            padding=(8, 5),
+            relief=tk.SOLID,
+            borderwidth=1,
+        )
+        label.pack()
+
+    def hide(self, _event=None) -> None:
+        if self.tip_window is not None:
+            self.tip_window.destroy()
+            self.tip_window = None
 
 
 class UbeeLauncherApp:
@@ -289,11 +321,10 @@ class UbeeLauncherApp:
         self.mounted_tape_var = tk.StringVar(value=self.config.get("mounted_tape", DEFAULT_CONFIG["mounted_tape"]))
         self.extra_args_var = tk.StringVar(value=self.config.get("extra_args", DEFAULT_CONFIG["extra_args"]))
         self.status_var = tk.StringVar(value="Set your paths, scan, then launch.")
-        self.setup_info_var = tk.StringVar(value="Quick setup\n\nClick Auto setup to detect uBee512 and scan ~/.ubee512.\n\nROM override, CP/M tools, printer capture, model selection and many other options are available in Advanced mode.")
+        self.setup_info_var = tk.StringVar(value="Quick setup\n\nClick Auto setup to detect uBee512 and scan ~/.ubee512.\n\nROM override, CP/M tools, printer capture, model selection and other specialist options are available in Advanced mode.")
         self.command_preview_var = tk.StringVar(value="")
         self.diagnostics_summary_var = tk.StringVar(value="Diagnostics have not been run yet.")
         self.default_rom1_var = tk.StringVar(value=self.config.get("last_rom", DEFAULT_CONFIG["last_rom"]))
-        self.include_hidden_var = tk.BooleanVar(value=self.config.get("include_hidden", DEFAULT_CONFIG["include_hidden"]))
         self.advanced_mode_var = tk.BooleanVar(value=self.config.get("advanced_mode", DEFAULT_CONFIG["advanced_mode"]))
 
         self.printer_output_var = tk.StringVar(
@@ -336,15 +367,8 @@ class UbeeLauncherApp:
         self.root.after(150, self.scan_saved_root_on_startup)
 
     def normalize_boot_mode(self, value: str) -> str:
-        """Map old saved boot mode names to the simplified 1_5h boot mode list."""
-        mapping = {
-            "Plain launch": "Auto / plain launch",
-            "Floppy A (-a)": "Auto / plain launch",
-            "Floppy B (-b)": "Auto / plain launch",
-            "CF/IDE boot (--ide-a0)": "CF/IDE boot",
-        }
-        normalised = mapping.get(value, value)
-        return normalised if normalised in BOOT_MODES else "Auto / plain launch"
+        """Keep launch mode values inside the supported v1_5i list."""
+        return value if value in BOOT_MODES else "Auto / plain launch"
 
     def load_config(self) -> dict:
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -352,6 +376,15 @@ class UbeeLauncherApp:
             try:
                 config = {**DEFAULT_CONFIG, **json.loads(CONFIG_FILE.read_text(encoding="utf-8"))}
                 config["last_boot_mode"] = self.normalize_boot_mode(config.get("last_boot_mode", "Auto / plain launch"))
+                old_tape_mode = config.get("tape_mode", "Auto")
+                tape_mode_mapping = {
+                    "Off": "Auto",
+                    "WAV input (--tapei)": "Auto",
+                    "TAP input (--tapfilei)": "Auto",
+                }
+                config["tape_mode"] = tape_mode_mapping.get(old_tape_mode, old_tape_mode)
+                if config["tape_mode"] not in TAPE_MODES:
+                    config["tape_mode"] = "Auto"
                 return config
             except Exception:
                 return DEFAULT_CONFIG.copy()
@@ -381,7 +414,6 @@ class UbeeLauncherApp:
             "cpm_filename": self.cpm_filename_var.get().strip(),
             "cpm_target_name": self.cpm_target_name_var.get().strip(),
             "host_export_dir": self.host_export_dir_var.get().strip(),
-            "include_hidden": self.include_hidden_var.get(),
             "mounted_drive_a": self.mounted_drive_vars["A"].get().strip(),
             "mounted_drive_b": self.mounted_drive_vars["B"].get().strip(),
             "mounted_drive_c": self.mounted_drive_vars["C"].get().strip(),
@@ -422,9 +454,9 @@ class UbeeLauncherApp:
 
         controls = ttk.Frame(top)
         controls.grid(row=2, column=0, columnspan=6, sticky="ew", pady=(6, 0))
-        controls.columnconfigure(11, weight=1)
+        controls.columnconfigure(12, weight=1)
 
-        self.boot_mode_label = ttk.Label(controls, text="Boot mode")
+        self.boot_mode_label = ttk.Label(controls, text="Launch mode")
         self.boot_mode_label.grid(row=0, column=0, sticky="w")
         self.boot_mode_entry = ttk.Combobox(
             controls,
@@ -455,14 +487,30 @@ class UbeeLauncherApp:
         self.rom256k_label.grid_remove()
         self.rom256k_entry.grid_remove()
 
-        self.include_hidden_check = ttk.Checkbutton(controls, text="Include hidden", variable=self.include_hidden_var)
-        self.include_hidden_check.grid(row=0, column=6, sticky="w", padx=(0, 10))
-        ttk.Checkbutton(
-            controls,
-            text="Advanced mode",
+        self.interface_mode_label = ttk.Label(controls, text="Interface mode")
+        self.interface_mode_label.grid(row=0, column=6, sticky="w", padx=(0, 6))
+
+        self.interface_mode_frame = ttk.Frame(controls)
+        self.interface_mode_frame.grid(row=0, column=7, sticky="w", padx=(0, 10))
+
+        self.simple_mode_radio = ttk.Radiobutton(
+            self.interface_mode_frame,
+            text="Simple",
             variable=self.advanced_mode_var,
+            value=False,
             command=self.update_mode_ui,
-        ).grid(row=0, column=7, sticky="w", padx=(0, 10))
+        )
+        self.simple_mode_radio.pack(side=tk.LEFT)
+
+        self.advanced_mode_radio = ttk.Radiobutton(
+            self.interface_mode_frame,
+            text="Advanced",
+            variable=self.advanced_mode_var,
+            value=True,
+            command=self.update_mode_ui,
+        )
+        self.advanced_mode_radio.pack(side=tk.LEFT, padx=(8, 0))
+
         self.auto_setup_button = ttk.Button(controls, text="Auto setup", command=self.auto_setup, width=12, style="Auto.TButton")
         self.auto_setup_button.grid(row=0, column=8, sticky="w", padx=(0, 8))
         ttk.Button(controls, text="Scan files", command=self.scan_files, width=12).grid(row=0, column=9, sticky="w")
@@ -527,7 +575,7 @@ class UbeeLauncherApp:
         self.diagnostics_tab = ttk.Frame(self.workflow, padding=8)
         self.workflow.add(self.printer_tab, text="Printer / LPRINT")
         self.workflow.add(self.cpm_tab, text="CP/M tools")
-        self.workflow.add(self.diagnostics_tab, text="Diagnostics")
+        self.workflow.add(self.diagnostics_tab, text="Diagnostics / Maintenance")
 
         self._build_printer_tab(self.printer_tab)
         self._build_scrollable_cpm_tab(self.cpm_tab)
@@ -543,8 +591,15 @@ class UbeeLauncherApp:
         mounted_panel.columnconfigure(1, weight=1)
         mounted_panel.columnconfigure(4, weight=1)
 
-        ttk.Label(mounted_panel, text="Floppy drives", font=("TkDefaultFont", 10, "bold")).grid(
-            row=0, column=0, columnspan=7, sticky="w", pady=(0, 4)
+        floppy_heading = ttk.Frame(mounted_panel)
+        floppy_heading.grid(row=0, column=0, columnspan=7, sticky="w", pady=(0, 4))
+        ttk.Label(floppy_heading, text="Floppy drives", font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT)
+        disk_support_note = ttk.Label(floppy_heading, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        disk_support_note.pack(side=tk.LEFT)
+        ToolTip(
+            disk_support_note,
+            "Disk mounting depends on the selected Microbee model and uBee512 support.\n"
+            "Some models may not support disk boot.",
         )
 
         for idx, drive in enumerate(("A", "B", "C", "D")):
@@ -576,8 +631,19 @@ class UbeeLauncherApp:
             width=10,
         ).grid(row=1, column=6, rowspan=2, sticky="ns", padx=(4, 0), pady=3)
 
-        self.tape_section_label = ttk.Label(mounted_panel, text="Tape input", font=("TkDefaultFont", 10, "bold"))
+        self.tape_section_label = ttk.Frame(mounted_panel)
         self.tape_section_label.grid(row=3, column=0, columnspan=7, sticky="w", pady=(10, 4))
+        ttk.Label(self.tape_section_label, text="Tape input", font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT)
+        tape_help_note = ttk.Label(self.tape_section_label, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        tape_help_note.pack(side=tk.LEFT)
+        ToolTip(
+            tape_help_note,
+            "Select a tape file from the Tape files list, then press Use tape.\n\n"
+            "Auto mode chooses WAV or TAP based on the file extension.\n\n"
+            "After launching uBee512, use LOAD \"\" or CLOAD at the BASIC prompt, "
+            "then press Alt+T / EMUKEY+T to rewind/start the tape.\n\n"
+            "When loading finishes, type RUN if the program does not auto-start.",
+        )
 
         self.tape_mode_label = ttk.Label(mounted_panel, text="Mode")
         self.tape_mode_label.grid(row=4, column=0, sticky="w", padx=(0, 4), pady=3)
@@ -589,7 +655,7 @@ class UbeeLauncherApp:
             width=20,
         )
         self.tape_mode_entry.grid(row=4, column=1, columnspan=2, sticky="w", pady=3)
-        self.use_selected_tape_button = ttk.Button(mounted_panel, text="Use selected tape", command=self.use_selected_tape_input)
+        self.use_selected_tape_button = ttk.Button(mounted_panel, text="Use tape", command=self.use_selected_tape_input)
         self.use_selected_tape_button.grid(row=4, column=3, columnspan=2, sticky="w", padx=(8, 0), pady=3)
         self.clear_tape_button = ttk.Button(mounted_panel, text="Clear tape", command=self.clear_tape_input)
         self.clear_tape_button.grid(row=4, column=5, columnspan=2, sticky="e", pady=3)
@@ -598,6 +664,11 @@ class UbeeLauncherApp:
         self.tape_file_label.grid(row=5, column=0, sticky="w", padx=(0, 4), pady=3)
         self.tape_file_entry = ttk.Entry(mounted_panel, textvariable=self.mounted_tape_var)
         self.tape_file_entry.grid(row=5, column=1, columnspan=6, sticky="ew", pady=3)
+        ttk.Label(
+            mounted_panel,
+            text="Select tape  >  Use tape  >  Launch",
+            justify=tk.LEFT,
+        ).grid(row=6, column=0, columnspan=7, sticky="w", pady=(2, 0))
 
         launch_panel = ttk.LabelFrame(bottom, text="Launch command", padding=(8, 6))
         launch_panel.grid(row=0, column=1, sticky="nsew")
@@ -610,14 +681,34 @@ class UbeeLauncherApp:
         self.extra_args_entry = ttk.Entry(launch_panel, textvariable=self.extra_args_var)
         self.extra_args_entry.grid(row=0, column=1, columnspan=3, sticky="ew", pady=2)
 
-        self.rom1_label = ttk.Label(launch_panel, text="Override boot ROM (--rom1)")
+        self.rom1_label = ttk.Frame(launch_panel)
         self.rom1_label.grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Label(self.rom1_label, text="ROM override").pack(side=tk.LEFT)
+        rom_help_note = ttk.Label(self.rom1_label, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        rom_help_note.pack(side=tk.LEFT)
+        ToolTip(
+            rom_help_note,
+            "Optional advanced override for uBee512 --rom1.\n\n"
+            "Most users should leave this blank and let uBee512 load ROMs through roms.alias.",
+        )
         self.rom1_entry = ttk.Entry(launch_panel, textvariable=self.default_rom1_var)
         self.rom1_entry.grid(row=1, column=1, columnspan=3, sticky="ew", pady=2)
 
-        ttk.Label(launch_panel, text="Command preview").grid(row=2, column=0, sticky="w", padx=(0, 6), pady=2)
-        preview = ttk.Entry(launch_panel, textvariable=self.command_preview_var, state="readonly")
-        preview.grid(row=2, column=1, columnspan=3, sticky="ew", pady=2)
+        ttk.Label(launch_panel, text="Command").grid(row=2, column=0, sticky="nw", padx=(0, 6), pady=2)
+        self.command_preview_text = tk.Text(
+            launch_panel,
+            height=4,
+            wrap=tk.WORD,
+            relief=tk.SUNKEN,
+            borderwidth=1,
+            highlightthickness=0,
+            background="white",
+            foreground="black",
+            selectbackground="#2f6fed",
+            selectforeground="white",
+        )
+        self.command_preview_text.grid(row=2, column=1, columnspan=3, sticky="ew", pady=2)
+        self.command_preview_text.configure(state="disabled")
 
         ttk.Button(launch_panel, text="Copy command", command=self.copy_command).grid(row=3, column=0, sticky="w", pady=(6, 0))
         ttk.Button(launch_panel, text="Keyboard Help", command=self.show_keyboard_help).grid(row=3, column=1, sticky="w", pady=(6, 0), padx=(8, 0))
@@ -634,18 +725,10 @@ class UbeeLauncherApp:
             self.boot_mode_entry,
             self.model_label,
             self.model_entry,
-            self.include_hidden_check,
             self.extra_args_label,
             self.extra_args_entry,
             self.rom1_label,
             self.rom1_entry,
-            self.tape_section_label,
-            self.tape_mode_label,
-            self.tape_mode_entry,
-            self.use_selected_tape_button,
-            self.clear_tape_button,
-            self.tape_file_label,
-            self.tape_file_entry,
         ]
         for widget in advanced_widgets:
             if advanced:
@@ -654,21 +737,14 @@ class UbeeLauncherApp:
                 widget.grid_remove()
 
         # Auto setup is a Simple-mode convenience. In Advanced mode it is available
-        # from Diagnostics so the top row stays uncluttered.
+        # from Diagnostics / Maintenance so the top row stays uncluttered.
         if advanced:
             self.auto_setup_button.grid_remove()
             self.advanced_panel.grid()
             self.middle.columnconfigure(1, weight=2)
-            if (
-                self.normalize_boot_mode(self.boot_mode_var.get().strip()) == "Model select"
-                and self.model_var.get().strip() in ROM_TAPE_ONLY_MODELS
-            ):
-                self.clear_mounted_drives_silent()
-                self.status_var.set("Mounted disks cleared because this model does not support disk images.")
             if hasattr(self, "diagnostics_text"):
                 self.refresh_diagnostics()
         else:
-            self.clear_mounted_drives_silent()
             self.auto_setup_button.grid()
             self.advanced_panel.grid_remove()
             self.middle.columnconfigure(1, weight=0)
@@ -678,6 +754,7 @@ class UbeeLauncherApp:
 
         # Do not re-grid media widgets here. Disk / Tape / ROM remain a fixed
         # three-column layout in both modes to avoid Tkinter layout corruption.
+        self.update_model_selector_state()
         self.refresh_command_preview()
 
     def _bind_events(self) -> None:
@@ -707,7 +784,7 @@ class UbeeLauncherApp:
             var.trace_add("write", lambda *_: self.refresh_command_preview())
 
         self.model_var.trace_add("write", self.on_model_changed)
-        self.include_hidden_var.trace_add("write", lambda *_: self.refresh_command_preview())
+        self.boot_mode_var.trace_add("write", lambda *_: self.update_model_selector_state())
         self.printer_mode_var.trace_add("write", lambda *_: self.update_printer_mode_ui())
         self.rom_list.bind("<<ListboxSelect>>", self.on_rom_selection_changed)
         self.disk_list.bind("<<ListboxSelect>>", self.on_disk_selection_changed)
@@ -715,14 +792,14 @@ class UbeeLauncherApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
 
-    def on_model_changed(self, *_args) -> None:
-        model = self.model_var.get().strip()
+    def update_model_selector_state(self) -> None:
         boot_mode = self.normalize_boot_mode(self.boot_mode_var.get().strip())
-        if self.advanced_mode_var.get() and boot_mode == "Model select" and model in ROM_TAPE_ONLY_MODELS:
-            had_mounted_disks = any(self.mounted_drive_vars[drive].get().strip() for drive in ("A", "B", "C", "D"))
-            if had_mounted_disks:
-                self.clear_mounted_drives_silent()
-                self.status_var.set(f"Mounted disks cleared because {model} does not support disk images.")
+        if hasattr(self, "model_entry"):
+            state = "readonly" if self.advanced_mode_var.get() and boot_mode == "Model select" else "disabled"
+            self.model_entry.configure(state=state)
+
+    def on_model_changed(self, *_args) -> None:
+        self.update_model_selector_state()
         self.refresh_command_preview()
 
     def configure_styles(self) -> None:
@@ -751,7 +828,7 @@ class UbeeLauncherApp:
             f"ROMs: {rom_count} found\n"
             f"Disks: {disk_count} found\n"
             f"Tapes: {tape_count} found\n\n"
-            "ROM override, CP/M tools, printer capture, model selection and many other options are available in Advanced mode."
+            "ROM override, CP/M tools, printer capture, model selection and other specialist options are available in Advanced mode."
         )
 
     def scan_saved_root_on_startup(self) -> None:
@@ -776,7 +853,6 @@ class UbeeLauncherApp:
 
         self.search_root_var.set(str(DEFAULT_SEARCH_ROOT))
         self.printer_output_var.set(str(DEFAULT_PRINTER_FILE))
-        self.include_hidden_var.set(True)
 
         if not DEFAULT_SEARCH_ROOT.exists():
             messagebox.showwarning(
@@ -818,7 +894,6 @@ class UbeeLauncherApp:
         self.mounted_tape_var.set(DEFAULT_CONFIG["mounted_tape"])
         self.printer_output_var.set(DEFAULT_CONFIG["printer_output_file"])
         self.printer_mode_var.set(self.printer_mode_to_index(DEFAULT_CONFIG["printer_mode"]))
-        self.include_hidden_var.set(DEFAULT_CONFIG["include_hidden"])
         self.advanced_mode_var.set(DEFAULT_CONFIG["advanced_mode"])
         for drive in ("A", "B", "C", "D"):
             self.mounted_drive_vars[drive].set("")
@@ -1080,31 +1155,8 @@ class UbeeLauncherApp:
         }
 
     def selected_model_boot_warning(self) -> str:
-        if self.normalize_boot_mode(self.boot_mode_var.get().strip()) != "Model select":
-            return ""
-        root = self.get_search_root_path()
-        info = self.boot_alias_diagnostic(root)
-        model = str(info["model"])
-        if not self.advanced_mode_var.get():
-            return ""
-        if model in ROM_TAPE_ONLY_MODELS or model in CF_MODEL_ALIAS_HINTS:
-            return ""
-        if model not in MODEL_DISK_ALIAS_HINTS:
-            return ""
-        if any(self.mounted_drive_vars[drive].get().strip() for drive in ("A", "B", "C", "D")):
-            return ""
-        resolved = info["resolved"]
-        alias_target_exists = any(found for _alias, _target, found in resolved) if isinstance(resolved, list) else False
-        if alias_target_exists or bool(info["fallback_exists"]):
-            return ""
-
-        expected = MODEL_DISK_ALIAS_HINTS.get(model, "the selected model's boot alias")
-        return (
-            f"The selected model '{model}' normally expects a boot disk alias such as {expected}, "
-            "but Diagnostics could not find the resolved alias target or fallback boot.dsk under the disks folder.\n\n"
-            "The launcher will not mount a random boot disk automatically. uBee512 may still resolve defaults through its own alias system, "
-            "or you can place the expected disk image in the disks folder, update disks.alias, or manually mount a disk to drive A."
-        )
+        """v1_5i uses a note only; it does not restrict model/disk combinations."""
+        return ""
 
     def _build_diagnostics_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -1115,7 +1167,8 @@ class UbeeLauncherApp:
         ttk.Button(button_row, text="Refresh diagnostics", command=self.refresh_diagnostics).pack(side=tk.LEFT)
         ttk.Button(button_row, text="Copy all", command=self.copy_all_diagnostics).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(button_row, text="Auto setup", command=self.auto_setup).pack(side=tk.LEFT, padx=(8, 0))
-        ttk.Button(button_row, text="Clear launcher config", command=self.clear_config).pack(side=tk.LEFT, padx=(8, 0))
+        ttk.Label(button_row, text="Maintenance:").pack(side=tk.LEFT, padx=(16, 0))
+        ttk.Button(button_row, text="Clear launcher config", command=self.clear_config).pack(side=tk.LEFT, padx=(6, 0))
 
         self.diagnostics_text = scrolledtext.ScrolledText(parent, wrap=tk.WORD, height=18)
         self.diagnostics_text.grid(row=1, column=0, sticky="nsew")
@@ -1163,7 +1216,7 @@ class UbeeLauncherApp:
         lines.append(self.info_line("Selected model", model))
         if boot_info["rom_tape_only"]:
             lines.append(self.info_line("Expected disk alias", "No disk boot expected for this model"))
-            lines.append(self.info_line("Mounted disk arguments", "suppressed for this model"))
+            lines.append(self.info_line("Mounted disk arguments", "allowed when explicitly mounted; actual support depends on uBee512/model"))
         elif boot_info["cf_guidance"]:
             expected = ", ".join(str(alias) for alias in boot_info["expected_aliases"])
             lines.append(self.info_line("Expected disk alias guidance", expected))
@@ -1293,12 +1346,21 @@ class UbeeLauncherApp:
             length=60,
             variable=self.printer_mode_var,
             command=self.on_printer_mode_slider,
-        ).grid(row=0, column=0, sticky="w")
+        ).pack(side=tk.LEFT)
         self.printer_mode_value_label = ttk.Label(
             printer_mode_row,
             text=self.printer_mode_label(self.printer_mode_var.get()),
         )
-        self.printer_mode_value_label.grid(row=1, column=0, sticky="w", pady=(4, 0))
+        self.printer_mode_value_label.pack(side=tk.LEFT, padx=(10, 0))
+        printer_help_note = ttk.Label(printer_mode_row, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        printer_help_note.pack(side=tk.LEFT)
+        ToolTip(
+            printer_help_note,
+            "Use OUTL#1 for the printer device and OUTL#0 for screen output.\n\n"
+            "Then use LPRINT \"TEXT\" for a quick test or LLIST for a BASIC program listing.\n\n"
+            "Raw mode uses --print. ASCII mode uses --printa.\n\n"
+            "Printed data may not appear in the host file until uBee512 closes the printer file or exits.",
+        )
 
         ttk.Label(parent, text="Printer output file").grid(row=1, column=0, sticky="w", padx=(0, 8), pady=4)
         ttk.Entry(parent, textvariable=self.printer_output_var).grid(row=1, column=1, sticky="ew", pady=4)
@@ -1317,13 +1379,6 @@ class UbeeLauncherApp:
         self.printer_preview.grid(row=3, column=0, columnspan=3, sticky="nsew")
         self.printer_preview.configure(state="disabled")
 
-        printer_help = (
-            'Use OUTL#1 for the printer device and OUTL#0 for screen output.\n'
-            'Then use LPRINT "TEXT" for a quick test or LLIST for a BASIC program listing.\n'
-            "Raw mode uses --print. ASCII mode uses --printa.\n"
-            "Printed data may not appear in the host file until uBee512 closes the printer file or exits."
-        )
-        ttk.Label(parent, text=printer_help, justify=tk.LEFT).grid(row=4, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
     def _build_scrollable_cpm_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -1354,13 +1409,19 @@ class UbeeLauncherApp:
         parent.columnconfigure(0, weight=1)
         parent.rowconfigure(5, weight=1)
 
-        help_text = (
-            "Use these tools when you want to inspect a CP/M disk image or move files between the host and the disk image.\n"
-            "Pick the disk image in the main Disk images list first, then choose the action you want below."
+        cpm_help_row = ttk.Frame(parent)
+        cpm_help_row.grid(row=0, column=0, sticky="w", pady=(0, 8))
+        ttk.Label(cpm_help_row, text="CP/M tools help", font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT)
+        cpm_help_note = ttk.Label(cpm_help_row, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        cpm_help_note.pack(side=tk.LEFT)
+        ToolTip(
+            cpm_help_note,
+            "Use these tools to inspect a CP/M disk image or move files between the host and disk image.\n\n"
+            "Pick the disk image in the main Disk images list first, then choose the action below.\n\n"
+            "You may need cpmls and cpmcp installed and the correct disk format selected.",
         )
-        ttk.Label(parent, text=help_text, justify=tk.LEFT).grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
-        common = ttk.LabelFrame(parent, text="Common settings", padding=8)
+        common = ttk.LabelFrame(parent, text="CP/M disk and tool settings", padding=8)
         common.grid(row=1, column=0, sticky="ew", pady=(0, 8))
         common.columnconfigure(1, weight=1)
         common.columnconfigure(3, weight=1)
@@ -1427,21 +1488,15 @@ class UbeeLauncherApp:
         disks: list[Path] = []
         tapes: list[Path] = []
 
-        for dirpath, dirnames, filenames in os.walk(root_path):
-            if not self.include_hidden_var.get():
-                dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-
+        for dirpath, _dirnames, filenames in os.walk(root_path):
             for name in filenames:
-                if not self.include_hidden_var.get() and name.startswith("."):
-                    continue
-
                 p = Path(dirpath) / name
 
                 if has_extension(p, ROM_EXTENSIONS):
                     roms.append(p)
                 elif has_extension(p, DISK_EXTENSIONS):
                     disks.append(p)
-                elif has_extension(p, TAPE_EXTENSIONS):
+                elif p.suffix.lower() in TAPE_EXTENSIONS:
                     tapes.append(p)
 
         roms.sort(key=lambda p: str(p).lower())
@@ -1541,34 +1596,40 @@ class UbeeLauncherApp:
     def on_tape_selection_changed(self, _event=None) -> None:
         tape = self.get_selected_tape_path()
         if tape is not None:
-            self.status_var.set(f"Selected tape: {tape.name}. Use 'Use selected tape' in Advanced mode to mount it as input.")
+            self.status_var.set(f"Selected tape: {tape.name}. Press 'Use tape' to mount it as input.")
 
-    def infer_tape_mode_for_path(self, path: Path | None) -> str:
+    def infer_tape_kind_for_path(self, path: Path | None) -> str:
         if path is None:
-            return "Off"
-        lower_name = path.name.lower()
-        if lower_name.endswith(".wav"):
-            return "WAV input (--tapei)"
-        if lower_name.endswith(".tap"):
-            return "TAP input (--tapfilei)"
-        return "Off"
+            return ""
+        suffix = path.suffix.lower()
+        if suffix == ".wav":
+            return "WAV"
+        if suffix == ".tap":
+            return "TAP"
+        return ""
+
+    def selected_tape_kind(self, tape: Path) -> str:
+        mode = self.tape_mode_var.get().strip()
+        if mode in {"WAV", "TAP"}:
+            return mode
+        return self.infer_tape_kind_for_path(tape)
 
     def use_selected_tape_input(self) -> None:
         tape = self.get_selected_tape_path()
         if tape is None:
             messagebox.showerror(APP_NAME, "Select a WAV or TAP tape file first.")
             return
-        mode = self.infer_tape_mode_for_path(tape)
-        if mode == "Off":
-            messagebox.showerror(APP_NAME, "Tape input currently supports WAV and TAP files only.")
+        if not self.infer_tape_kind_for_path(tape):
+            messagebox.showerror(APP_NAME, "Tape input supports WAV and TAP files only.")
             return
         self.mounted_tape_var.set(str(tape))
-        self.tape_mode_var.set(mode)
+        if self.tape_mode_var.get().strip() not in TAPE_MODES:
+            self.tape_mode_var.set("Auto")
         self.status_var.set(f"Mounted tape input: {tape.name}")
         self.refresh_command_preview()
 
     def clear_tape_input(self) -> None:
-        self.tape_mode_var.set("Off")
+        self.tape_mode_var.set("Auto")
         self.mounted_tape_var.set("")
         self.status_var.set("Cleared tape input.")
         self.refresh_command_preview()
@@ -1668,7 +1729,7 @@ class UbeeLauncherApp:
         extra = self.extra_args_var.get().strip()
 
         # Custom arguments only is a true manual command mode.
-        # It does not add printer, tape, ROM, model, selected disk, or mounted floppy arguments.
+        # It does not add printer, tape, ROM, model, IDE, or mounted floppy arguments.
         if self.advanced_mode_var.get() and boot_mode == "Custom arguments only":
             if extra:
                 try:
@@ -1689,28 +1750,22 @@ class UbeeLauncherApp:
 
         model = self.model_var.get().strip()
 
-        # Advanced mode should only reveal model controls. It should not add
-        # --model until the user explicitly chooses the Model select boot mode.
+        # The model only affects the command when Launch mode is explicitly Model select.
         if self.advanced_mode_var.get() and boot_mode == "Model select" and model:
             cmd.append(f"--model={model}")
 
         mounted_floppies = self.get_mounted_floppy_paths()
-        disk_flags_allowed = (
-            self.advanced_mode_var.get()
-            and boot_mode in {"Auto / plain launch", "Model select"}
-            and model not in ROM_TAPE_ONLY_MODELS
-        )
+        disk_flags_allowed = boot_mode in {"Auto / plain launch", "Model select"}
 
         # Selecting a disk in the media list is only a selection. Disk flags are
         # added only when the user explicitly mounts a disk to A/B/C/D.
-        # CF/IDE boot uses the selected IDE image instead of floppy mount flags.
         if mounted_floppies and disk_flags_allowed:
             for drive, flag in (("A", "-a"), ("B", "-b"), ("C", "-c"), ("D", "-d")):
                 path = mounted_floppies.get(drive)
                 if path is not None:
                     cmd.extend([flag, str(path)])
 
-        if self.advanced_mode_var.get() and boot_mode == "CF/IDE boot":
+        if self.advanced_mode_var.get() and boot_mode == "IDE/CF boot":
             disk = self.get_selected_disk_path()
             rom256k = self.rom256k_var.get().strip()
             if rom256k and rom256k.lower() != "none":
@@ -1718,13 +1773,13 @@ class UbeeLauncherApp:
             if disk and self.is_ide_image(disk):
                 cmd.append(f"--ide-a0={disk}")
 
-        tape_mode = self.tape_mode_var.get().strip()
         tape_text = self.mounted_tape_var.get().strip()
-        if self.advanced_mode_var.get() and self.normalize_boot_mode(self.boot_mode_var.get().strip()) != "Custom arguments only" and tape_mode != "Off" and tape_text:
+        if boot_mode != "Custom arguments only" and tape_text:
             tape = Path(tape_text).expanduser()
-            if tape_mode == "WAV input (--tapei)":
+            tape_kind = self.selected_tape_kind(tape)
+            if tape_kind == "WAV":
                 cmd.append(f"--tapei={tape}")
-            elif tape_mode == "TAP input (--tapfilei)":
+            elif tape_kind == "TAP":
                 cmd.append(f"--tapfilei={tape}")
 
         rom_text = self.default_rom1_var.get().strip()
@@ -1745,11 +1800,13 @@ class UbeeLauncherApp:
 
     def refresh_command_preview(self) -> None:
         cmd = self.build_command()
-        if not cmd:
-            self.command_preview_var.set("")
-            return
-
-        self.command_preview_var.set(self.shell_join(cmd))
+        command_text = self.shell_join(cmd) if cmd else ""
+        self.command_preview_var.set(command_text)
+        if hasattr(self, "command_preview_text"):
+            self.command_preview_text.configure(state="normal")
+            self.command_preview_text.delete("1.0", tk.END)
+            self.command_preview_text.insert("1.0", command_text)
+            self.command_preview_text.configure(state="disabled")
 
     def copy_command(self) -> None:
         cmd = self.command_preview_var.get().strip()
@@ -1845,9 +1902,8 @@ class UbeeLauncherApp:
                 self.status_var.set("Launch cancelled.")
                 return
 
-        tape_mode = self.tape_mode_var.get().strip()
         tape_text = self.mounted_tape_var.get().strip()
-        if self.advanced_mode_var.get() and tape_mode != "Off" and tape_text:
+        if self.normalize_boot_mode(self.boot_mode_var.get().strip()) != "Custom arguments only" and tape_text:
             reminder = (
                 "You have mounted a tape file as emulator input.\n\n"
                 "WAV files use --tapei. TAP files use --tapfilei.\n"
@@ -1866,8 +1922,8 @@ class UbeeLauncherApp:
 
         boot_mode = self.normalize_boot_mode(self.boot_mode_var.get().strip())
         disk = self.get_selected_disk_path()
-        if self.advanced_mode_var.get() and boot_mode == "CF/IDE boot" and disk and not self.is_ide_image(disk):
-            messagebox.showerror(APP_NAME, "CF/IDE boot needs a hard disk image such as .hd0, .hd1, .hd2, .hdd, or .img.")
+        if self.advanced_mode_var.get() and boot_mode == "IDE/CF boot" and disk and not self.is_ide_image(disk):
+            messagebox.showerror(APP_NAME, "IDE/CF boot needs a hard disk image such as .hd0, .hd1, .hd2, .hdd, or .img.")
             return
 
         # No validation is needed for the selected media-list disk in other modes because
@@ -1894,15 +1950,6 @@ class UbeeLauncherApp:
         if self.advanced_mode_var.get() and library_path:
             existing = env.get("LD_LIBRARY_PATH", "")
             env["LD_LIBRARY_PATH"] = f"{library_path}:{existing}" if existing else library_path
-
-        boot_mode = self.normalize_boot_mode(self.boot_mode_var.get().strip())
-        if boot_mode != "Custom arguments only":
-            rom_text = self.default_rom1_var.get().strip()
-            cmd = [arg for arg in cmd if not arg.startswith("--rom1=")]
-            if self.advanced_mode_var.get() and rom_text:
-                rom = Path(rom_text).expanduser()
-                if rom.is_file():
-                    cmd.append(f"--rom1={rom}")
 
         try:
             subprocess.Popen(cmd, start_new_session=True, env=env, cwd=str(Path.home()))
