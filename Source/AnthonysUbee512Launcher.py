@@ -540,6 +540,7 @@ class UbeeLauncherApp:
         self.disk_label = ttk.Label(files_area, text="Disk images", font=("TkDefaultFont", 10, "bold"))
         self.disk_label.grid(row=0, column=0, sticky="w")
         self.disk_list = tk.Listbox(files_area, exportselection=False, height=18)
+        self.apply_media_listbox_style(self.disk_list)
         self.disk_list.grid(row=1, column=0, rowspan=3, sticky="nsew", pady=(4, 0), padx=(0, 4))
         self.disk_scroll = ttk.Scrollbar(files_area, orient="vertical", command=self.disk_list.yview)
         self.disk_scroll.grid(row=1, column=1, rowspan=3, sticky="ns", pady=(4, 0), padx=(0, 8))
@@ -548,6 +549,7 @@ class UbeeLauncherApp:
         self.tape_label = ttk.Label(files_area, text="Tape files", font=("TkDefaultFont", 10, "bold"))
         self.tape_label.grid(row=0, column=2, sticky="w")
         self.tape_list = tk.Listbox(files_area, exportselection=False, height=8)
+        self.apply_media_listbox_style(self.tape_list)
         self.tape_list.grid(row=1, column=2, sticky="nsew", pady=(4, 8), padx=(0, 4))
         self.tape_scroll = ttk.Scrollbar(files_area, orient="vertical", command=self.tape_list.yview)
         self.tape_scroll.grid(row=1, column=3, sticky="ns", pady=(4, 8))
@@ -556,6 +558,7 @@ class UbeeLauncherApp:
         self.rom_label = ttk.Label(files_area, text="ROMs", font=("TkDefaultFont", 10, "bold"))
         self.rom_label.grid(row=2, column=2, sticky="w")
         self.rom_list = tk.Listbox(files_area, exportselection=False, height=8)
+        self.apply_media_listbox_style(self.rom_list)
         self.rom_list.grid(row=3, column=2, sticky="nsew", pady=(4, 0), padx=(0, 4))
         self.rom_scroll = ttk.Scrollbar(files_area, orient="vertical", command=self.rom_list.yview)
         self.rom_scroll.grid(row=3, column=3, sticky="ns", pady=(4, 0))
@@ -801,6 +804,13 @@ class UbeeLauncherApp:
     def on_model_changed(self, *_args) -> None:
         self.update_model_selector_state()
         self.refresh_command_preview()
+
+    def apply_media_listbox_style(self, listbox: tk.Listbox) -> None:
+        listbox.configure(
+            selectbackground="#2f6fed",
+            selectforeground="white",
+            activestyle="none",
+        )
 
     def configure_styles(self) -> None:
         try:
