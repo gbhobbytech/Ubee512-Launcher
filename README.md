@@ -14,11 +14,18 @@ The launcher is designed to make it easier to select uBee512 paths, scan for ROM
 
 ### Linux
 
-**Current Linux version:** `1_5`
+**Current Linux version:** `1_6`
 
-The Linux launcher has been updated and rebuilt for version `1_5`.
+The Linux launcher has been updated and rebuilt for version `1_6`.
 
 This version includes:
+
+- a new Display/Performance landing tab
+- selectable video rendering and monitor modes
+- safe preset Microbee aspect ratios
+- working custom emulator titles
+- model-aware clock presets from 1 MHz to 150 MHz
+- Turbo mode and tab-level display defaults
 
 - improved launch behaviour
 - scanning for ROMs, disk images, and tape files
