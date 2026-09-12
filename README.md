@@ -1,14 +1,14 @@
 # Anthony's Ubee512 Launcher
 
-Anthony's Ubee512 Launcher is a simple desktop launcher for the uBee512 emulator.
+Anthony's Ubee512 Launcher is a desktop launcher for the uBee512 emulator.
 
 The project currently includes separate launcher versions for:
 
-- Linux
-- macOS
-- Windows
+* Linux
+* macOS
+* Windows
 
-The launcher is designed to make it easier to select uBee512 paths, scan for ROMs, disks, and tape files, preview the launch command, and start the emulator without having to manually type long command-line instructions each time.
+The launcher is designed to make it easier to select uBee512 paths, scan for ROMs, disks and tape files, preview the launch command, and start the emulator without manually typing long command-line instructions each time.
 
 ## Current Status
 
@@ -20,28 +20,34 @@ The Linux launcher has been updated and rebuilt for version `1_6`.
 
 This version includes:
 
-- a new Display/Performance landing tab
-- selectable video rendering and monitor modes
-- safe preset Microbee aspect ratios
-- a default launcher-branded emulator title with a custom title override
-- model-aware clock presets from 1 MHz to 150 MHz
-- Turbo mode and tab-level display defaults
-- scrollable Advanced tabs for smaller windows and varied display scaling
-
-- improved launch behaviour
-- scanning for ROMs, disk images, and tape files
-- clearer diagnostics for missing folders and files
-- updated tape-loading guidance
-- support for mounting floppy disk images to drives A, B, C, and D
-- printer output support for BASIC `LPRINT` and `LLIST`
-- CP/M tools integration for inspecting and copying files to and from disk images
-- an updated Linux executable and ZIP package
+* Display/Performance landing tab
+* selectable video rendering and monitor modes
+* safe preset Microbee aspect ratios
+* default launcher-branded emulator title with a custom title override
+* model-aware clock presets from 1 MHz to 150 MHz
+* Turbo mode and tab-level display defaults
+* scrollable Advanced tabs for smaller windows and varied display scaling
+* improved launch behaviour
+* scanning for ROMs, disk images and tape files
+* clearer diagnostics for missing folders and files
+* updated tape-loading guidance
+* support for mounting floppy disk images to drives A, B, C and D
+* printer output support for BASIC `LPRINT` and `LLIST`
+* CP/M tools integration for inspecting and copying files to and from disk images
+* updated Linux executable and ZIP package
 
 ### macOS
 
-A macOS launcher build is included in the project.
+**Current macOS version:** `1_6`
 
-The macOS version uses macOS-specific path handling and macOS system calls for opening files and folders.
+Two macOS builds are available:
+
+* **Apple Silicon / ARM64** for Macs using Apple Silicon processors such as M1, M2, M3 or M4
+* **Intel / x86_64** for Intel-based Macs
+
+The macOS launcher uses macOS-specific path handling and system calls for opening files and folders.
+
+The Intel build has been built as a native 64-bit `x86_64` application and the launcher interface has been tested on macOS High Sierra 10.13.6. The uBee512 emulator itself was not installed on that test machine, so emulator launch testing for the Intel build is still limited.
 
 ### Windows
 
@@ -51,14 +57,12 @@ The Windows launcher has been updated and rebuilt for version `1_6`.
 
 This version includes:
 
-- a Display/Performance landing tab
-- selectable video and monitor modes
-- safe preset Microbee aspect ratios
-- a default launcher-branded emulator title with a custom override
-- clock-speed presets from 1 MHz to 150 MHz and Turbo mode
-- scrollable Advanced tabs for smaller windows and varied display scaling
-
-A Windows launcher build is included in the project.
+* Display/Performance landing tab
+* selectable video and monitor modes
+* safe preset Microbee aspect ratios
+* default launcher-branded emulator title with a custom override
+* clock-speed presets from 1 MHz to 150 MHz and Turbo mode
+* scrollable Advanced tabs for smaller windows and varied display scaling
 
 The Windows version uses Windows-specific path handling and Windows system calls for opening files and folders.
 
@@ -71,17 +75,17 @@ Ubee512-Launcher/
 │   ├── Mac/
 │   └── Windows/
 ├── Source/
-│   ├── AnthonysUbee512Launcher.py
-│   ├── AnthonysUbee512MacLauncher.py
-│   ├── AnthonysUbee512WindowsLauncher.py
-│   └── versions/
+│   ├── AnthonysUBee512Launcher.py
+│   ├── AnthonysUBee512Launcher_Mac_ARM.py
+│   ├── AnthonysUBee512Launcher_Mac_Intel.py
+│   └── AnthonysUbee512WindowsLauncher.py
 ├── LICENSE
 └── README.md
 ```
 
 ## Builds
 
-The packaged builds are stored in the `Builds/` folder.
+Packaged builds are stored in the `Builds/` folder.
 
 ```text
 Builds/Linux/
@@ -103,12 +107,24 @@ The Linux executable is stored inside:
 Builds/Linux/AnthonysUBee512Launcher/
 ```
 
-### macOS Build
+### macOS Builds
 
-The macOS build is stored in:
+The current Apple Silicon build is:
 
 ```text
-Builds/Mac/
+Builds/Mac/AnthonysUBee512Launcher-Mac-ARM-v1_6.zip
+```
+
+The current Intel build is:
+
+```text
+Builds/Mac/AnthonysUBee512Launcher-Mac-Intel-v1_6.zip
+```
+
+Older Mac builds are stored in:
+
+```text
+Builds/Mac/archive/
 ```
 
 ### Windows Build
@@ -143,11 +159,26 @@ chmod +x ./AnthonysUBee512Launcher
 
 ## Running the macOS Version
 
-Open the `Builds/Mac/` folder and use the macOS launcher package.
+Open the `Builds/Mac/` folder and choose the package that matches your Mac:
 
-Depending on your macOS security settings, you may need to allow the app to run through System Settings after first launch.
+```text
+Apple Silicon:
+AnthonysUBee512Launcher-Mac-ARM-v1_6.zip
 
-The macOS version is intended for the macOS uBee512 package and uses macOS-specific default paths where appropriate.
+Intel:
+AnthonysUBee512Launcher-Mac-Intel-v1_6.zip
+```
+
+Download and unzip the appropriate package, then open the launcher application.
+
+The macOS builds are not currently Apple-notarised, so macOS may block the app the first time it is opened.
+
+Depending on your macOS version, you may need to:
+
+1. right-click the app and choose **Open**, or
+2. allow it through **System Settings / System Preferences → Privacy & Security**
+
+The macOS launcher is intended for an existing uBee512 setup and uses macOS-specific default paths where appropriate.
 
 ## Running the Windows Version
 
@@ -157,41 +188,48 @@ The Windows version is intended for a Windows uBee512 setup and uses Windows-spe
 
 ## Source Files
 
-The main Linux source file is:
+### Linux
 
 ```text
-Source/AnthonysUbee512Launcher.py
+Source/AnthonysUBee512Launcher.py
 ```
 
-The macOS source file is:
+### macOS Apple Silicon
 
 ```text
-Source/AnthonysUbee512MacLauncher.py
+Source/AnthonysUBee512Launcher_Mac_ARM.py
 ```
 
-The Windows source file is:
+### macOS Intel
+
+```text
+Source/AnthonysUBee512Launcher_Mac_Intel.py
+```
+
+### Windows
 
 ```text
 Source/AnthonysUbee512WindowsLauncher.py
 ```
 
-Versioned source snapshots are stored in:
+## Build Notes
 
-```text
-Source/versions/
-```
+Each platform should be built from its corresponding source file.
 
-For example:
+The general release process is:
 
-```text
-Source/versions/AnthonysUbee512Launcher_1_5.py
-```
+1. update the appropriate source file
+2. test the source directly
+3. commit and push the source
+4. build the platform package
+5. test the packaged application
+6. copy the tested build into the appropriate `Builds/` folder
+7. recreate the downloadable ZIP if required
+8. commit and push the build
+9. update documentation if needed
+10. tag the release if appropriate
 
-## Linux Build Notes
-
-The Linux build is created from the Linux source file using PyInstaller.
-
-Recommended build process:
+### Linux Build Example
 
 ```bash
 cd ~/Documents/Git/Ubee512-Launcher
@@ -199,24 +237,28 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install pyinstaller
-python -m PyInstaller --onefile --windowed --name AnthonysUBee512Launcher Source/AnthonysUbee512Launcher.py
+python -m PyInstaller --onefile --windowed --name AnthonysUBee512Launcher Source/AnthonysUBee512Launcher.py
 ```
 
-After building, the generated executable appears in:
+The generated executable appears in:
 
 ```text
 dist/AnthonysUBee512Launcher
 ```
 
-The tested executable should then be copied into:
+### macOS Intel Build Example
 
-```text
-Builds/Linux/AnthonysUBee512Launcher/
+A native Intel build can be created on an Intel Mac with:
+
+```bash
+python3 -m PyInstaller \
+  --windowed \
+  --name "Anthonys Ubee512 Launcher" \
+  --target-arch x86_64 \
+  Source/AnthonysUBee512Launcher_Mac_Intel.py
 ```
 
-The Linux ZIP package should be recreated after replacing the executable.
-
-## CP/M Tools Notes
+### CP/M Tools Notes
 
 The launcher includes basic CP/M tools integration for inspecting disk images and copying files to and from disk images.
 
@@ -228,7 +270,7 @@ cpmcp
 diskdefs
 ```
 
-The `diskdefs` file should be stored in the same folder as the CP/M tools.
+The `diskdefs` file should be stored in the same folder as the CP/M tools where required.
 
 On Windows, for example, the CP/M tools may be stored together in a folder such as:
 
@@ -238,7 +280,7 @@ E:\ubee512\tools\cpmtools-2.10\
 
 On Linux or macOS, the tools may be installed system-wide or stored with the uBee512 tools, depending on the user's setup.
 
-## ROMs, Disks, and Tapes
+## ROMs, Disks and Tapes
 
 The launcher can scan for:
 
@@ -269,18 +311,17 @@ The launcher can scan for:
 ### Tape files
 
 ```text
-.mwb
 .tap
 .wav
 ```
 
-The launcher scans recursively from the selected search root.
+The launcher scans from the selected search root and, where the expected uBee512 media folders exist, keeps ROMs, disks and tapes separated into their normal folders.
 
 ## Tape Loading Note
 
 The launcher can attach tape files to the uBee512 launch command.
 
-The exact command needed inside the emulator depends on the model and the tape format.
+The exact command needed inside the emulator depends on the model and tape format.
 
 Common examples include:
 
@@ -317,9 +358,9 @@ Printed data may not appear in the host printer output file until uBee512 closes
 
 ## Development Workflow
 
-The source code should be treated as the main version of the launcher.
+GitHub should be treated as the shared source of truth.
 
-Recommended workflow:
+Before starting work:
 
 ```bash
 git checkout main
@@ -327,26 +368,15 @@ git pull origin main
 git status
 ```
 
-After making changes:
+After making useful changes:
 
 ```bash
-git add Source/AnthonysUbee512Launcher.py
-git commit -m "Describe the source change"
+git add .
+git commit -m "Describe the change"
 git push origin main
 ```
 
-For Linux releases, the usual order is:
-
-1. Update and test the Linux source file.
-2. Copy the source file to `Source/versions/`.
-3. Commit and push the source.
-4. Build the Linux executable.
-5. Test the built executable.
-6. Replace the Linux build in `Builds/Linux/`.
-7. Recreate the Linux ZIP package.
-8. Commit and push the build and ZIP.
-9. Update the README if needed.
-10. Tag the release if appropriate.
+The source code should be treated as the primary version of the launcher. Packaged builds should always be generated from tested source.
 
 ## License
 
