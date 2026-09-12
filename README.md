@@ -4,9 +4,9 @@ Anthony's Ubee512 Launcher is a desktop launcher for the uBee512 emulator.
 
 The project currently includes separate launcher versions for:
 
-* Linux
-* macOS
-* Windows
+- Linux
+- macOS
+- Windows
 
 The launcher is designed to make it easier to select uBee512 paths, scan for ROMs, disks and tape files, preview the launch command, and start the emulator without manually typing long command-line instructions each time.
 
@@ -20,21 +20,21 @@ The Linux launcher has been updated and rebuilt for version `1_6`.
 
 This version includes:
 
-* Display/Performance landing tab
-* selectable video rendering and monitor modes
-* safe preset Microbee aspect ratios
-* default launcher-branded emulator title with a custom title override
-* model-aware clock presets from 1 MHz to 150 MHz
-* Turbo mode and tab-level display defaults
-* scrollable Advanced tabs for smaller windows and varied display scaling
-* improved launch behaviour
-* scanning for ROMs, disk images and tape files
-* clearer diagnostics for missing folders and files
-* updated tape-loading guidance
-* support for mounting floppy disk images to drives A, B, C and D
-* printer output support for BASIC `LPRINT` and `LLIST`
-* CP/M tools integration for inspecting and copying files to and from disk images
-* updated Linux executable and ZIP package
+- Display/Performance landing tab
+- selectable video rendering and monitor modes
+- safe preset Microbee aspect ratios
+- default launcher-branded emulator title with a custom title override
+- model-aware clock presets from 1 MHz to 150 MHz
+- Turbo mode and tab-level display defaults
+- scrollable Advanced tabs for smaller windows and varied display scaling
+- improved launch behaviour
+- scanning for ROMs, disk images and tape files
+- clearer diagnostics for missing folders and files
+- updated tape-loading guidance
+- support for mounting floppy disk images to drives A, B, C and D
+- printer output support for BASIC `LPRINT` and `LLIST`
+- CP/M tools integration for inspecting and copying files to and from disk images
+- updated Linux executable and ZIP package
 
 ### macOS
 
@@ -42,8 +42,8 @@ This version includes:
 
 Two macOS builds are available:
 
-* **Apple Silicon / ARM64** for Macs using Apple Silicon processors such as M1, M2, M3 or M4
-* **Intel / x86_64** for Intel-based Macs
+- **Apple Silicon / ARM64** for Macs using Apple Silicon processors such as M1, M2, M3 or M4
+- **Intel / x86_64** for Intel-based Macs
 
 The macOS launcher uses macOS-specific path handling and system calls for opening files and folders.
 
@@ -57,12 +57,12 @@ The Windows launcher has been updated and rebuilt for version `1_6`.
 
 This version includes:
 
-* Display/Performance landing tab
-* selectable video and monitor modes
-* safe preset Microbee aspect ratios
-* default launcher-branded emulator title with a custom override
-* clock-speed presets from 1 MHz to 150 MHz and Turbo mode
-* scrollable Advanced tabs for smaller windows and varied display scaling
+- Display/Performance landing tab
+- selectable video and monitor modes
+- safe preset Microbee aspect ratios
+- default launcher-branded emulator title with a custom override
+- clock-speed presets from 1 MHz to 150 MHz and Turbo mode
+- scrollable Advanced tabs for smaller windows and varied display scaling
 
 The Windows version uses Windows-specific path handling and Windows system calls for opening files and folders.
 
@@ -98,7 +98,7 @@ Builds/Windows/
 The current Linux downloadable package is:
 
 ```text
-Builds/Linux/AnthonysUBee512Launcher-Linux.zip
+Builds/Linux/AnthonysUBee512Launcher-Linux-v1_6.zip
 ```
 
 The Linux executable is stored inside:
@@ -129,10 +129,10 @@ Builds/Mac/archive/
 
 ### Windows Build
 
-The Windows build is stored in:
+The current Windows downloadable package is:
 
 ```text
-Builds/Windows/
+Builds/Windows/AnthonysUBee512Launcher-Windows-v1_6.zip
 ```
 
 ## Running the Linux Version
@@ -140,7 +140,7 @@ Builds/Windows/
 Download or open:
 
 ```text
-Builds/Linux/AnthonysUBee512Launcher-Linux.zip
+Builds/Linux/AnthonysUBee512Launcher-Linux-v1_6.zip
 ```
 
 Extract the ZIP file.
@@ -182,7 +182,13 @@ The macOS launcher is intended for an existing uBee512 setup and uses macOS-spec
 
 ## Running the Windows Version
 
-Open the `Builds/Windows/` folder and run the Windows launcher executable.
+Download and extract:
+
+```text
+Builds/Windows/AnthonysUBee512Launcher-Windows-v1_6.zip
+```
+
+Then run the Windows launcher executable.
 
 The Windows version is intended for a Windows uBee512 setup and uses Windows-specific path handling.
 
@@ -258,7 +264,7 @@ python3 -m PyInstaller \
   Source/AnthonysUBee512Launcher_Mac_Intel.py
 ```
 
-### CP/M Tools Notes
+## CP/M Tools Notes
 
 The launcher includes basic CP/M tools integration for inspecting disk images and copying files to and from disk images.
 
