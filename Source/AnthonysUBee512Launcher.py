@@ -273,7 +273,7 @@ DEFAULT_CONFIG = {
     "monitor_type": "Default",
     "clock_mhz": "Model default",
    "gl_aspect_bee": "Default (4:3)",
-   "emulator_title": "",
+   "emulator_title": "Launched with Anthony's Ubee512 Launcher",
     "last_boot_mode": "Auto / plain launch",
     "last_rom": "",
     "last_disk": "",
@@ -433,7 +433,10 @@ class UbeeLauncherApp:
         self.clock_mhz_var = tk.StringVar(value=self.config.get("clock_mhz", DEFAULT_CONFIG["clock_mhz"]))
         self.clock_speed_index_var = tk.DoubleVar(value=self.clock_speed_to_index(self.clock_mhz_var.get()))
         self.gl_aspect_bee_var = tk.StringVar(value=self.config.get("gl_aspect_bee", DEFAULT_CONFIG["gl_aspect_bee"]))
-        self.emulator_title_var = tk.StringVar(value=self.config.get("emulator_title", DEFAULT_CONFIG["emulator_title"]))
+        saved_emulator_title = self.config.get("emulator_title", "").strip()
+        self.emulator_title_var = tk.StringVar(
+            value=saved_emulator_title or DEFAULT_CONFIG["emulator_title"]
+        )
         self.status_var = tk.StringVar(value="Set your paths, scan, then launch.")
         self.setup_info_var = tk.StringVar(value="Quick setup\n\nClick Auto setup to detect uBee512 and scan ~/.ubee512.\n\nROM override, CP/M tools, printer capture, model selection and other specialist options are available in Advanced mode.")
         self.command_preview_var = tk.StringVar(value="")
@@ -741,20 +744,20 @@ class UbeeLauncherApp:
         self.workflow = ttk.Notebook(right)
         self.workflow.grid(row=0, column=0, sticky="nsew")
 
-        self.printer_tab = ttk.Frame(self.workflow, padding=8)
-        self.display_tab = ttk.Frame(self.workflow, padding=8)
+        self.printer_tab = ttk.Frame(self.workflow, padding=0)
+        self.display_tab = ttk.Frame(self.workflow, padding=0)
         self.cpm_tab = ttk.Frame(self.workflow, padding=0)
-        self.diagnostics_tab = ttk.Frame(self.workflow, padding=8)
+        self.diagnostics_tab = ttk.Frame(self.workflow, padding=0)
         self.workflow.add(self.display_tab, text="Display/Performance")
         self.workflow.add(self.printer_tab, text="Printer/LPRINT")
         self.workflow.add(self.cpm_tab, text="CP/M tools")
         self.workflow.add(self.diagnostics_tab, text="Diagnostics/Maintenance")
         self.workflow.select(self.display_tab)
 
-        self._build_printer_tab(self.printer_tab)
-        self._build_display_tab(self.display_tab)
+        self._build_scrollable_tab(self.printer_tab, self._build_printer_tab)
+        self._build_scrollable_tab(self.display_tab, self._build_display_tab)
         self._build_scrollable_cpm_tab(self.cpm_tab)
-        self._build_diagnostics_tab(self.diagnostics_tab)
+        self._build_scrollable_tab(self.diagnostics_tab, self._build_diagnostics_tab)
 
         bottom = ttk.Frame(self.root, padding=(10, 4, 10, 8))
         bottom.grid(row=2, column=0, sticky="ew")
@@ -1355,6 +1358,37 @@ class UbeeLauncherApp:
     def selected_model_boot_warning(self) -> str:
         """v1_5i uses a note only; it does not restrict model/disk combinations."""
         return ""
+
+    def _build_scrollable_tab(self, parent: ttk.Frame, builder) -> None:
+        """Build a tab whose full contents remain reachable in a small window."""
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(0, weight=1)
+
+        canvas = tk.Canvas(parent, highlightthickness=0)
+        vertical = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        horizontal = ttk.Scrollbar(parent, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vertical.grid(row=0, column=1, sticky="ns")
+        horizontal.grid(row=1, column=0, sticky="ew")
+
+        content = ttk.Frame(canvas, padding=8)
+        window_id = canvas.create_window((0, 0), window=content, anchor="nw")
+
+        def _sync_scrollregion(_event=None) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _resize_content(event) -> None:
+            # Fill the viewport when possible, but preserve a wider natural
+            # layout so horizontally clipped controls can still be reached.
+            width = max(event.width, content.winfo_reqwidth())
+            canvas.itemconfigure(window_id, width=width)
+            _sync_scrollregion()
+
+        content.bind("<Configure>", _sync_scrollregion)
+        canvas.bind("<Configure>", _resize_content)
+        builder(content)
 
     def _build_diagnostics_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -2116,10 +2150,14 @@ class UbeeLauncherApp:
             if gl_aspect_bee:
                 cmd.append(f"--gl-aspect-bee={gl_aspect_bee}")
 
-            emulator_title = self.emulator_title_var.get().strip()
-            if emulator_title:
-                cmd.append(f"--title={emulator_title}")
-                cmd.append("--status=+title")
+        # Give every emulator launch a recognisable title. Text entered in the
+        # Display/Performance tab overrides this default.
+        emulator_title = (
+            self.emulator_title_var.get().strip()
+            or DEFAULT_CONFIG["emulator_title"]
+        )
+        cmd.append(f"--title={emulator_title}")
+        cmd.append("--status=+title")
 
         mounted_floppies = self.get_mounted_floppy_paths()
         disk_flags_allowed = boot_mode in {"Auto / plain launch", "Model select"}

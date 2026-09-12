@@ -23,9 +23,10 @@ This version includes:
 - a new Display/Performance landing tab
 - selectable video rendering and monitor modes
 - safe preset Microbee aspect ratios
-- working custom emulator titles
+- a default launcher-branded emulator title with a custom title override
 - model-aware clock presets from 1 MHz to 150 MHz
 - Turbo mode and tab-level display defaults
+- scrollable Advanced tabs for smaller windows and varied display scaling
 
 - improved launch behaviour
 - scanning for ROMs, disk images, and tape files
