@@ -45,6 +45,19 @@ The macOS version uses macOS-specific path handling and macOS system calls for o
 
 ### Windows
 
+**Current Windows version:** `1_6`
+
+The Windows launcher has been updated and rebuilt for version `1_6`.
+
+This version includes:
+
+- a Display/Performance landing tab
+- selectable video and monitor modes
+- safe preset Microbee aspect ratios
+- a default launcher-branded emulator title with a custom override
+- clock-speed presets from 1 MHz to 150 MHz and Turbo mode
+- scrollable Advanced tabs for smaller windows and varied display scaling
+
 A Windows launcher build is included in the project.
 
 The Windows version uses Windows-specific path handling and Windows system calls for opening files and folders.
