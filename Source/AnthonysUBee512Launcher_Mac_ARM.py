@@ -26,7 +26,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-VERSION = "1_5k_mac_test"
+VERSION = "1_6"
 APP_NAME = f"Anthony's Ubee512 Launcher {VERSION}"
 CONFIG_DIR = Path.home() / "Library" / "Application Support" / "Ubee512 Launcher"
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -175,6 +175,79 @@ TAPE_MODES = [
     "TAP",
 ]
 
+VIDEO_TYPE_OPTIONS = [
+    "Default",
+    "OpenGL",
+    "SDL hardware",
+    "SDL software",
+]
+
+VIDEO_TYPE_ARGUMENTS = {
+    "OpenGL": "gl",
+    "SDL hardware": "hw",
+    "SDL software": "sw",
+}
+
+MONITOR_OPTIONS = [
+    "Default",
+    "Colour",
+    "Amber",
+    "Green",
+   "White on black",
+   "Black on white",
+]
+
+MONITOR_ARGUMENTS = {
+    "Colour": "colour",
+    "Amber": "amber",
+    "Green": "green",
+   "White on black": "white",
+   "Black on white": "black",
+}
+
+GL_ASPECT_OPTIONS = [
+    "Default (4:3)",
+    "1:1 (Square)",
+    "5:4",
+    "3:2",
+    "16:10",
+    "16:9 (Widescreen)",
+]
+
+GL_ASPECT_ARGUMENTS = {
+    "1:1 (Square)": "1.000",
+    "5:4": "1.250",
+    "3:2": "1.500",
+    "16:10": "1.600",
+    "16:9 (Widescreen)": "1.778",
+}
+
+CLOCK_SPEED_OPTIONS = [
+    "Model default",
+    "1 MHz",
+    "2 MHz",
+    "3.375 MHz",
+    "6.75 MHz",
+    "10 MHz",
+    "25 MHz",
+    "50 MHz",
+    "100 MHz",
+    "150 MHz",
+    "∞ Turbo",
+]
+
+CLOCK_SPEED_ARGUMENTS = {
+    "1 MHz": "1",
+    "2 MHz": "2",
+    "3.375 MHz": "3.375",
+    "6.75 MHz": "6.75",
+    "10 MHz": "10",
+    "25 MHz": "25",
+    "50 MHz": "50",
+    "100 MHz": "100",
+    "150 MHz": "150",
+}
+
 CPM_FORMAT_PRESETS = [
     "",
     "ds40",
@@ -197,6 +270,11 @@ DEFAULT_CONFIG = {
     "model_preset": "pcf",
     "rom256k": "none",
     "extra_args": "",
+    "video_type": "Default",
+    "monitor_type": "Default",
+    "clock_mhz": "Model default",
+   "gl_aspect_bee": "Default (4:3)",
+   "emulator_title": "Launched with Anthony's Ubee512 Launcher",
     "last_boot_mode": "Auto / plain launch",
     "last_rom": "",
     "last_disk": "",
@@ -300,6 +378,34 @@ class UbeeLauncherApp:
             )
         self.refresh_command_preview()
 
+    @staticmethod
+    def clock_speed_to_index(value: str) -> int:
+        try:
+            return CLOCK_SPEED_OPTIONS.index(value)
+        except ValueError:
+            return 0
+
+    def on_clock_speed_slider(self, value: str) -> None:
+        snapped = max(0, min(round(float(value)), len(CLOCK_SPEED_OPTIONS) - 1))
+        self.clock_speed_index_var.set(snapped)
+        self.clock_mhz_var.set(CLOCK_SPEED_OPTIONS[snapped])
+        self.update_clock_speed_ui()
+
+    def update_clock_speed_ui(self) -> None:
+        if hasattr(self, "clock_speed_value_label"):
+            self.clock_speed_value_label.configure(text=self.clock_mhz_var.get())
+        self.refresh_command_preview()
+
+    def restore_display_defaults(self) -> None:
+        self.video_type_var.set(DEFAULT_CONFIG["video_type"])
+        self.monitor_type_var.set(DEFAULT_CONFIG["monitor_type"])
+        self.gl_aspect_bee_var.set(DEFAULT_CONFIG["gl_aspect_bee"])
+        self.emulator_title_var.set(DEFAULT_CONFIG["emulator_title"])
+        self.clock_mhz_var.set(DEFAULT_CONFIG["clock_mhz"])
+        self.clock_speed_index_var.set(self.clock_speed_to_index(DEFAULT_CONFIG["clock_mhz"]))
+        self.update_clock_speed_ui()
+        self.status_var.set("Display and performance settings restored to defaults.")
+
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title(APP_NAME)
@@ -323,6 +429,15 @@ class UbeeLauncherApp:
         self.tape_mode_var = tk.StringVar(value=self.config.get("tape_mode", DEFAULT_CONFIG["tape_mode"]))
         self.mounted_tape_var = tk.StringVar(value=self.config.get("mounted_tape", DEFAULT_CONFIG["mounted_tape"]))
         self.extra_args_var = tk.StringVar(value=self.config.get("extra_args", DEFAULT_CONFIG["extra_args"]))
+        self.video_type_var = tk.StringVar(value=self.config.get("video_type", DEFAULT_CONFIG["video_type"]))
+        self.monitor_type_var = tk.StringVar(value=self.config.get("monitor_type", DEFAULT_CONFIG["monitor_type"]))
+        self.clock_mhz_var = tk.StringVar(value=self.config.get("clock_mhz", DEFAULT_CONFIG["clock_mhz"]))
+        self.clock_speed_index_var = tk.DoubleVar(value=self.clock_speed_to_index(self.clock_mhz_var.get()))
+        self.gl_aspect_bee_var = tk.StringVar(value=self.config.get("gl_aspect_bee", DEFAULT_CONFIG["gl_aspect_bee"]))
+        saved_emulator_title = self.config.get("emulator_title", "").strip()
+        self.emulator_title_var = tk.StringVar(
+            value=saved_emulator_title or DEFAULT_CONFIG["emulator_title"]
+        )
         self.status_var = tk.StringVar(value="Set your paths, scan, then launch.")
         self.setup_info_var = tk.StringVar(value="Quick setup\n\nClick Auto setup to detect uBee512 on macOS and scan ~/.ubee512.\n\nROM override, CP/M tools, printer capture, model selection and other specialist options are available in Advanced mode.")
         self.command_preview_var = tk.StringVar(value="")
@@ -394,6 +509,47 @@ class UbeeLauncherApp:
                 config["tape_mode"] = tape_mode_mapping.get(old_tape_mode, old_tape_mode)
                 if config["tape_mode"] not in TAPE_MODES:
                     config["tape_mode"] = "Auto"
+                legacy_aspect_mapping = {
+                    "": "Default (4:3)",
+                    "1.0": "1:1 (Square)",
+                    "1.000": "1:1 (Square)",
+                    "1.25": "5:4",
+                    "1.250": "5:4",
+                    "1.333": "Default (4:3)",
+                    "1.5": "3:2",
+                    "1.500": "3:2",
+                    "1.6": "16:10",
+                    "1.600": "16:10",
+                    "1.778": "16:9 (Widescreen)",
+                }
+                saved_aspect = str(config.get("gl_aspect_bee", "")).strip()
+                config["gl_aspect_bee"] = legacy_aspect_mapping.get(saved_aspect, saved_aspect)
+                if config["gl_aspect_bee"] not in GL_ASPECT_OPTIONS:
+                    config["gl_aspect_bee"] = DEFAULT_CONFIG["gl_aspect_bee"]
+                legacy_clock_mapping = {
+                    "": "Model default",
+                    "1": "1 MHz",
+                    "1.0": "1 MHz",
+                    "2": "2 MHz",
+                    "2.0": "2 MHz",
+                    "3.375": "3.375 MHz",
+                    "6.75": "6.75 MHz",
+                    "10": "10 MHz",
+                    "10.0": "10 MHz",
+                    "25": "25 MHz",
+                    "25.0": "25 MHz",
+                    "50": "50 MHz",
+                    "50.0": "50 MHz",
+                    "100": "100 MHz",
+                    "100.0": "100 MHz",
+                    "150": "150 MHz",
+                    "150.0": "150 MHz",
+                    "turbo": "∞ Turbo",
+                }
+                saved_clock = str(config.get("clock_mhz", "")).strip()
+                config["clock_mhz"] = legacy_clock_mapping.get(saved_clock, saved_clock)
+                if config["clock_mhz"] not in CLOCK_SPEED_OPTIONS:
+                    config["clock_mhz"] = DEFAULT_CONFIG["clock_mhz"]
                 return config
             except Exception:
                 return DEFAULT_CONFIG.copy()
@@ -409,6 +565,11 @@ class UbeeLauncherApp:
             "model_preset": self.model_var.get().strip(),
             "rom256k": self.rom256k_var.get().strip(),
             "extra_args": self.extra_args_var.get().strip(),
+            "video_type": self.video_type_var.get().strip(),
+            "monitor_type": self.monitor_type_var.get().strip(),
+            "clock_mhz": self.clock_mhz_var.get().strip(),
+            "gl_aspect_bee": self.gl_aspect_bee_var.get().strip(),
+            "emulator_title": self.emulator_title_var.get().strip(),
             "last_boot_mode": self.boot_mode_var.get().strip(),
             "last_rom": self.default_rom1_var.get().strip(),
             "last_disk": str(selected_disk) if selected_disk else "",
@@ -584,16 +745,20 @@ class UbeeLauncherApp:
         self.workflow = ttk.Notebook(right)
         self.workflow.grid(row=0, column=0, sticky="nsew")
 
-        self.printer_tab = ttk.Frame(self.workflow, padding=8)
+        self.printer_tab = ttk.Frame(self.workflow, padding=0)
+        self.display_tab = ttk.Frame(self.workflow, padding=0)
         self.cpm_tab = ttk.Frame(self.workflow, padding=0)
-        self.diagnostics_tab = ttk.Frame(self.workflow, padding=8)
-        self.workflow.add(self.printer_tab, text="Printer / LPRINT")
+        self.diagnostics_tab = ttk.Frame(self.workflow, padding=0)
+        self.workflow.add(self.display_tab, text="Display/Performance")
+        self.workflow.add(self.printer_tab, text="Printer/LPRINT")
         self.workflow.add(self.cpm_tab, text="CP/M tools")
-        self.workflow.add(self.diagnostics_tab, text="Diagnostics / Maintenance")
+        self.workflow.add(self.diagnostics_tab, text="Diagnostics/Maintenance")
+        self.workflow.select(self.display_tab)
 
-        self._build_printer_tab(self.printer_tab)
+        self._build_scrollable_tab(self.printer_tab, self._build_printer_tab)
+        self._build_scrollable_tab(self.display_tab, self._build_display_tab)
         self._build_scrollable_cpm_tab(self.cpm_tab)
-        self._build_diagnostics_tab(self.diagnostics_tab)
+        self._build_scrollable_tab(self.diagnostics_tab, self._build_diagnostics_tab)
 
         bottom = ttk.Frame(self.root, padding=(10, 4, 10, 8))
         bottom.grid(row=2, column=0, sticky="ew")
@@ -781,6 +946,11 @@ class UbeeLauncherApp:
             self.tape_mode_var,
             self.mounted_tape_var,
             self.extra_args_var,
+            self.video_type_var,
+            self.monitor_type_var,
+            self.clock_mhz_var,
+            self.gl_aspect_bee_var,
+            self.emulator_title_var,
             self.default_rom1_var,
             self.printer_output_var,
             self.cpmls_var,
@@ -945,6 +1115,13 @@ class UbeeLauncherApp:
         self.model_var.set(DEFAULT_CONFIG["model_preset"])
         self.rom256k_var.set(DEFAULT_CONFIG["rom256k"])
         self.extra_args_var.set(DEFAULT_CONFIG["extra_args"])
+        self.video_type_var.set(DEFAULT_CONFIG["video_type"])
+        self.monitor_type_var.set(DEFAULT_CONFIG["monitor_type"])
+        self.clock_mhz_var.set(DEFAULT_CONFIG["clock_mhz"])
+        self.clock_speed_index_var.set(self.clock_speed_to_index(DEFAULT_CONFIG["clock_mhz"]))
+        self.update_clock_speed_ui()
+        self.gl_aspect_bee_var.set(DEFAULT_CONFIG["gl_aspect_bee"])
+        self.emulator_title_var.set(DEFAULT_CONFIG["emulator_title"])
         self.boot_mode_var.set(DEFAULT_CONFIG["last_boot_mode"])
         self.default_rom1_var.set(DEFAULT_CONFIG["last_rom"])
         self.tape_mode_var.set(DEFAULT_CONFIG["tape_mode"])
@@ -1217,6 +1394,37 @@ class UbeeLauncherApp:
         """v1_5i uses a note only; it does not restrict model/disk combinations."""
         return ""
 
+    def _build_scrollable_tab(self, parent: ttk.Frame, builder) -> None:
+        """Build a tab whose full contents remain reachable in a small window."""
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(0, weight=1)
+
+        canvas = tk.Canvas(parent, highlightthickness=0)
+        vertical = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        horizontal = ttk.Scrollbar(parent, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vertical.grid(row=0, column=1, sticky="ns")
+        horizontal.grid(row=1, column=0, sticky="ew")
+
+        content = ttk.Frame(canvas, padding=8)
+        window_id = canvas.create_window((0, 0), window=content, anchor="nw")
+
+        def _sync_scrollregion(_event=None) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _resize_content(event) -> None:
+            # Fill the viewport when possible, but preserve a wider natural
+            # layout so horizontally clipped controls can still be reached.
+            width = max(event.width, content.winfo_reqwidth())
+            canvas.itemconfigure(window_id, width=width)
+            _sync_scrollregion()
+
+        content.bind("<Configure>", _sync_scrollregion)
+        canvas.bind("<Configure>", _resize_content)
+        builder(content)
+
     def _build_diagnostics_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
         parent.rowconfigure(1, weight=1)
@@ -1440,6 +1648,84 @@ class UbeeLauncherApp:
         self.printer_preview = scrolledtext.ScrolledText(parent, wrap=tk.WORD, height=18)
         self.printer_preview.grid(row=3, column=0, columnspan=3, sticky="nsew")
         self.printer_preview.configure(state="disabled")
+
+    def _build_display_tab(self, parent: ttk.Frame) -> None:
+        parent.columnconfigure(1, weight=1)
+
+        ttk.Label(parent, text="Video type").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=4)
+        ttk.Combobox(parent, textvariable=self.video_type_var, values=VIDEO_TYPE_OPTIONS, state="readonly", width=22).grid(
+            row=0, column=1, sticky="ew", pady=4
+        )
+
+        ttk.Label(parent, text="Monitor").grid(row=1, column=0, sticky="w", padx=(0, 8), pady=4)
+        ttk.Combobox(parent, textvariable=self.monitor_type_var, values=MONITOR_OPTIONS, state="readonly", width=22).grid(
+            row=1, column=1, sticky="ew", pady=4
+        )
+
+        ttk.Label(parent, text="Microbee aspect").grid(row=2, column=0, sticky="w", padx=(0, 8), pady=4)
+        ttk.Combobox(
+            parent,
+            textvariable=self.gl_aspect_bee_var,
+            values=GL_ASPECT_OPTIONS,
+            state="readonly",
+            width=22,
+        ).grid(row=2, column=1, sticky="ew", pady=4)
+
+        title_label = ttk.Frame(parent)
+        title_label.grid(row=3, column=0, sticky="w", padx=(0, 8), pady=4)
+        ttk.Label(title_label, text="Emulator title").pack(side=tk.LEFT)
+        title_help = ttk.Label(title_label, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        title_help.pack(side=tk.LEFT)
+        ToolTip(
+            title_help,
+            "Sets a custom title and automatically enables its display in the uBee512 title bar.",
+        )
+        ttk.Entry(parent, textvariable=self.emulator_title_var).grid(row=3, column=1, sticky="ew", pady=4)
+
+        ttk.Separator(parent, orient="horizontal").grid(
+            row=4, column=0, columnspan=2, sticky="ew", pady=(14, 10)
+        )
+
+        speed_label = ttk.Frame(parent)
+        speed_label.grid(row=5, column=0, sticky="w", padx=(0, 8), pady=4)
+        ttk.Label(speed_label, text="Emulation speed").pack(side=tk.LEFT)
+        speed_help = ttk.Label(speed_label, text=" [?]", font=("TkDefaultFont", 8), foreground="gray")
+        speed_help.pack(side=tk.LEFT)
+        ToolTip(
+            speed_help,
+            "Model default uses the clock designed for the selected Microbee.\n\n"
+            "Other positions override the clock. ∞ Turbo runs as fast as the host permits.",
+        )
+
+        speed_controls = ttk.Frame(parent)
+        speed_controls.grid(row=5, column=1, sticky="ew", pady=4)
+        speed_controls.columnconfigure(0, weight=1)
+        self.clock_speed_scale = ttk.Scale(
+            speed_controls,
+            from_=0,
+            to=len(CLOCK_SPEED_OPTIONS) - 1,
+            variable=self.clock_speed_index_var,
+            command=self.on_clock_speed_slider,
+        )
+        self.clock_speed_scale.grid(row=0, column=0, sticky="ew")
+        self.clock_speed_value_label = ttk.Label(
+            speed_controls,
+            text=self.clock_mhz_var.get(),
+            width=14,
+            anchor="e",
+        )
+        self.clock_speed_value_label.grid(row=0, column=1, sticky="e", padx=(10, 0))
+
+        endpoint_labels = ttk.Frame(parent)
+        endpoint_labels.grid(row=6, column=1, sticky="ew")
+        ttk.Label(endpoint_labels, text="Model default").pack(side=tk.LEFT)
+        ttk.Label(endpoint_labels, text="∞ Turbo").pack(side=tk.RIGHT, padx=(0, 14))
+
+        ttk.Button(
+            parent,
+            text="Restore defaults",
+            command=self.restore_display_defaults,
+        ).grid(row=7, column=0, sticky="w", pady=(16, 0))
 
 
     def _build_scrollable_cpm_tab(self, parent: ttk.Frame) -> None:
@@ -1853,7 +2139,7 @@ class UbeeLauncherApp:
         extra = self.extra_args_var.get().strip()
 
         # Custom arguments only is a true manual command mode.
-        # It does not add printer, tape, ROM, model, IDE, or mounted floppy arguments.
+        # It does not add display, printer, tape, ROM, model, IDE, or mounted floppy arguments.
         if self.advanced_mode_var.get() and boot_mode == "Custom arguments only":
             if extra:
                 try:
@@ -1877,6 +2163,36 @@ class UbeeLauncherApp:
         # The model only affects the command when Launch mode is explicitly Model select.
         if self.advanced_mode_var.get() and boot_mode == "Model select" and model:
             cmd.append(f"--model={model}")
+
+        # uBee512 requires --model to precede display and clock overrides.
+        if self.advanced_mode_var.get():
+            video_type = VIDEO_TYPE_ARGUMENTS.get(self.video_type_var.get().strip())
+            if video_type:
+                cmd.append(f"--video-type={video_type}")
+
+            monitor_type = MONITOR_ARGUMENTS.get(self.monitor_type_var.get().strip())
+            if monitor_type:
+                cmd.append(f"--monitor={monitor_type}")
+
+            clock_selection = self.clock_mhz_var.get().strip()
+            clock_mhz = CLOCK_SPEED_ARGUMENTS.get(clock_selection)
+            if clock_mhz:
+                cmd.append(f"--clock={clock_mhz}")
+            elif clock_selection == "∞ Turbo":
+                cmd.append("--turbo")
+
+            gl_aspect_bee = GL_ASPECT_ARGUMENTS.get(self.gl_aspect_bee_var.get().strip())
+            if gl_aspect_bee:
+                cmd.append(f"--gl-aspect-bee={gl_aspect_bee}")
+
+        # Give every emulator launch a recognisable title. Text entered in the
+        # Display/Performance tab overrides this default.
+        emulator_title = (
+            self.emulator_title_var.get().strip()
+            or DEFAULT_CONFIG["emulator_title"]
+        )
+        cmd.append(f"--title={emulator_title}")
+        cmd.append("--status=+title")
 
         mounted_floppies = self.get_mounted_floppy_paths()
         disk_flags_allowed = boot_mode in {"Auto / plain launch", "Model select"}
@@ -2025,53 +2341,88 @@ class UbeeLauncherApp:
 
     def show_keyboard_help(self) -> None:
         help_text = (
-            "Microbee / uBee512 key mapping\n"
-            "===============================\n\n"
+            "Microbee / uBee512 key mapping for macOS\n"
+            "========================================\n\n"
+            "Quick MacBook equivalents\n"
+            "-------------------------\n"
+            "Most MacBook keyboards do not have dedicated Page Up, Page Down, Home, End,\n"
+            "Insert, or Pause/Break keys. Use these Mac equivalents when uBee512 refers\n"
+            "to PC-style keys:\n\n"
+            "  Page Up              = Fn + Up Arrow\n"
+            "  Page Down            = Fn + Down Arrow\n"
+            "  Home                 = Fn + Left Arrow\n"
+            "  End                  = Fn + Right Arrow\n"
+            "  Alt                  = Option\n"
+            "  Ctrl                 = Control\n"
+            "  Enter                = Return\n"
+            "  Pause / Break        = usually unavailable on MacBook keyboards\n"
+            "  Insert               = usually unavailable on MacBook keyboards\n\n"
             "Microbee key differences\n"
             "------------------------\n"
             "256TC / Teleterm models\n"
-            "  SELECT    = Page Up\n\n"
+            "  SELECT               = Page Up\n"
+            "                       = Fn + Up Arrow on MacBook\n\n"
             "Standard / Premium models\n"
-            "  LINEFEED  = Page Up\n"
-            "  RESET     = Page Down\n"
-            "  SHIFT 0   = Shift + Insert\n\n"
+            "  LINEFEED             = Page Up\n"
+            "                       = Fn + Up Arrow on MacBook\n\n"
+            "  RESET                = Page Down\n"
+            "                       = Fn + Down Arrow on MacBook\n\n"
+            "  SHIFT 0              = Shift + Insert\n"
+            "                       = awkward on MacBook because Insert is not normally present\n\n"
             "All models\n"
-            "  BREAK     = Pause / Break\n"
-            "  Function keys = Ctrl + number\n\n"
+            "  BREAK                = Pause / Break\n"
+            "                       = may need an external keyboard or remapping on MacBook\n\n"
+            "  Function keys        = Control + number\n"
+            "                       = for example Control + 1, Control + 2, etc.\n\n"
             "Emulator control\n"
             "----------------\n"
-            "  End                 = Exit emulator\n"
-            "  Page Down           = Reset emulator\n"
-            "  Esc + Page Down     = Bypass confirmation on reset\n\n"
+            "  Exit emulator        = End\n"
+            "                       = Fn + Right Arrow on MacBook\n\n"
+            "  Reset emulator       = Page Down\n"
+            "                       = Fn + Down Arrow on MacBook\n\n"
+            "  Reset without prompt = Esc + Page Down\n"
+            "                       = Esc + Fn + Down Arrow on MacBook\n\n"
             "EMUKEY\n"
             "------\n"
-            "EMUKEY is Home or Alt.\n"
-            "On 256TC / Teleterm, Alt is only usable if --lpen is enabled.\n\n"
-            "Useful EMUKEY shortcuts\n"
-            "-----------------------\n"
-            "  EMUKEY + Enter       = Full screen\n"
-            "  EMUKEY + T           = Tape rewind\n"
-            "  EMUKEY + S           = Sound mute\n"
-            "  EMUKEY + P           = Pause emulator\n"
-            "  EMUKEY + Up/Down     = Volume up / down\n"
-            "  EMUKEY + W           = Mouse wheel mode\n"
-            "  EMUKEY + M           = Microbee mouse toggle\n"
-            "  EMUKEY + C           = Console mode\n"
-            "  EMUKEY + F           = OpenGL filter toggle\n"
-            "  EMUKEY + Page Down   = Power cycle\n\n"
+            "uBee512 uses an EMUKEY for emulator shortcuts.\n\n"
+            "  EMUKEY               = Home or Alt\n"
+            "                       = Fn + Left Arrow or Option on MacBook\n\n"
+            "On 256TC / Teleterm models, Alt/Option is only usable if --lpen is enabled.\n"
+            "If one EMUKEY option does not respond, try the other.\n\n"
+            "Useful EMUKEY shortcuts on MacBook\n"
+            "----------------------------------\n"
+            "  Full screen          = EMUKEY + Return\n"
+            "                       = Option + Return, or Fn + Left Arrow + Return\n\n"
+            "  Tape rewind          = EMUKEY + T\n"
+            "  Sound mute           = EMUKEY + S\n"
+            "  Pause emulator       = EMUKEY + P\n"
+            "  Volume up / down     = EMUKEY + Up Arrow / Down Arrow\n"
+            "  Mouse wheel mode     = EMUKEY + W\n"
+            "  Microbee mouse toggle= EMUKEY + M\n"
+            "  Console mode         = EMUKEY + C\n"
+            "  OpenGL filter toggle = EMUKEY + F\n\n"
+            "  Power cycle          = EMUKEY + Page Down\n"
+            "                       = Option + Fn + Down Arrow, or Fn + Left Arrow + Fn + Down Arrow\n\n"
+            "Practical Mac notes\n"
+            "-------------------\n"
+            "  - The Mac Function key shortcuts depend on your keyboard settings.\n"
+            "  - If function keys or navigation keys behave strangely, try holding Fn.\n"
+            "  - For heavy emulator use, an external keyboard with Page Up, Page Down,\n"
+            "    Home, End, Insert, and Pause/Break keys may be easier.\n"
+            "  - If a key is important and not available, consider using macOS keyboard\n"
+            "    remapping or a tool such as Karabiner-Elements.\n\n"
             "Printer reminder\n"
             "----------------\n"
-            "  OUTL#1   = printer device\n"
-            "  OUTL#0   = screen output\n"
+            "  OUTL#1               = printer device\n"
+            "  OUTL#0               = screen output\n"
             '  LPRINT "TEST"\n'
             "  LLIST\n"
         )
 
         window = tk.Toplevel(self.root)
-        window.title("Keyboard Help")
-        window.geometry("760x520")
-        window.minsize(980, 680)
-        window.transient(self.root)
+        window.title("Keyboard Help - macOS")
+        window.geometry("820x620")
+        window.minsize(760, 520)
 
         frame = ttk.Frame(window, padding=12)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -2084,6 +2435,7 @@ class UbeeLauncherApp:
         button_row = ttk.Frame(frame)
         button_row.pack(fill=tk.X, pady=(10, 0))
         ttk.Button(button_row, text="Close", command=window.destroy).pack(side=tk.RIGHT)
+
 
     def launch_ubee(self) -> None:
         cmd = self.build_command()

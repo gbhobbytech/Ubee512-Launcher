@@ -1,17 +1,29 @@
 # Anthony's Ubee512 Launcher for macOS
 
-Current Mac build: **Anthony's Ubee512 Launcher v1_5k**
+Current Mac build: **Anthony's Ubee512 Launcher v1_6**
 
 ## Download
 
 Use this file:
 
 ```text
-AnthonysUBee512Launcher-Mac-ARM-v1_5k.zip
+AnthonysUBee512Launcher-Mac-ARM-v1_6.zip
 
-````
+```
 
 Older Mac builds have been moved into the archive/ folder so the current download is easier to identify.
+
+
+## What’s new in v1_6
+
+- Display/Performance landing tab
+- selectable video and monitor modes
+- safe preset Microbee aspect ratios
+- default launcher-branded emulator title with a custom override
+- clock-speed presets from 1 MHz to 150 MHz and Turbo mode
+- scrollable Advanced tabs for smaller windows and varied display scaling
+- restored macOS-specific keyboard help for MacBook and Apple keyboards
+
 
 System notes
 
@@ -59,4 +71,4 @@ Archived builds
 
 Older Mac builds are kept in the archive/ folder for reference only.
 
-Most users should download the current v1_5k build from this folder, not the archived versions.
+Most users should download the current v1_6 build from this folder, not the archived versions.
