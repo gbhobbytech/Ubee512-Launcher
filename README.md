@@ -1,5 +1,12 @@
 # Anthony's Ubee512 Launcher
 
+## Download the latest ready-to-run version
+
+**[Download Ubee512 Launcher 1.6](https://github.com/gbhobbytech/Ubee512-Launcher/releases/tag/v1.6)**
+
+Choose the package for Windows, Linux, macOS Apple Silicon, or macOS Intel from the **Assets** section.
+
+
 Anthony's Ubee512 Launcher is a desktop launcher for the uBee512 emulator.
 
 The project currently includes separate launcher versions for:
