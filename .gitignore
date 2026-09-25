@@ -9,3 +9,6 @@ __pycache__/
 
 # Packaged release builds
 Builds/
+
+# PyInstaller generated spec files
+*.spec

@@ -10,6 +10,8 @@ The project currently includes separate launcher versions for:
 
 The launcher is designed to make it easier to select uBee512 paths, scan for ROMs, disks and tape files, preview the launch command, and start the emulator without manually typing long command-line instructions each time.
 
+![Ubee512 Launcher main window](assets/screenshots/main-window.png)
+
 ## Current Status
 
 ### Linux
