@@ -12,6 +12,21 @@ The launcher is designed to make it easier to select uBee512 paths, scan for ROM
 
 ![Ubee512 Launcher main window](assets/screenshots/main-window.png)
 
+## Download a ready-to-run version
+
+You do **not** need Python or development tools to use the launcher.
+
+Ready-to-run builds are available from the latest GitHub Release for:
+
+- Windows
+- Linux
+- macOS Apple Silicon / ARM64
+- macOS Intel / x86_64
+
+Open the repository's **Releases** page and download the package for your computer.
+
+If you only want to use the launcher, download a release package rather than the source code.
+
 ## Current Status
 
 ### Linux
