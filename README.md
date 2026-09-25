@@ -70,10 +70,6 @@ The Windows version uses Windows-specific path handling and Windows system calls
 
 ```text
 Ubee512-Launcher/
-├── Builds/
-│   ├── Linux/
-│   ├── Mac/
-│   └── Windows/
 ├── Source/
 │   ├── AnthonysUBee512Launcher.py
 │   ├── AnthonysUBee512Launcher_Mac_ARM.py
@@ -83,69 +79,24 @@ Ubee512-Launcher/
 └── README.md
 ```
 
-## Builds
+## Downloads
 
-Packaged builds are stored in the `Builds/` folder.
+Packaged releases are published through GitHub Releases.
 
-```text
-Builds/Linux/
-Builds/Mac/
-Builds/Windows/
-```
+Current release: **v1.6**
 
-### Linux Build
+Available builds:
 
-The current Linux downloadable package is:
+- Linux
+- macOS Apple Silicon / ARM64
+- macOS Intel / x86_64
+- Windows
 
-```text
-Builds/Linux/AnthonysUBee512Launcher-Linux-v1_6.zip
-```
-
-The Linux executable is stored inside:
-
-```text
-Builds/Linux/AnthonysUBee512Launcher/
-```
-
-### macOS Builds
-
-The current Apple Silicon build is:
-
-```text
-Builds/Mac/AnthonysUBee512Launcher-Mac-ARM-v1_6.zip
-```
-
-The current Intel build is:
-
-```text
-Builds/Mac/AnthonysUBee512Launcher-Mac-Intel-v1_6.zip
-```
-
-Older Mac builds are stored in:
-
-```text
-Builds/Mac/archive/
-```
-
-### Windows Build
-
-The current Windows downloadable package is:
-
-```text
-Builds/Windows/AnthonysUBee512Launcher-Windows-v1_6.zip
-```
+Open the repository's **Releases** page and download the package for your platform.
 
 ## Running the Linux Version
 
-Download or open:
-
-```text
-Builds/Linux/AnthonysUBee512Launcher-Linux-v1_6.zip
-```
-
-Extract the ZIP file.
-
-Then open a terminal inside the extracted launcher folder and run:
+Download the Linux ZIP from the latest GitHub Release, extract it, then run:
 
 ```bash
 ./AnthonysUBee512Launcher
@@ -159,17 +110,12 @@ chmod +x ./AnthonysUBee512Launcher
 
 ## Running the macOS Version
 
-Open the `Builds/Mac/` folder and choose the package that matches your Mac:
+Download the appropriate macOS package from the latest GitHub Release:
 
-```text
-Apple Silicon:
-AnthonysUBee512Launcher-Mac-ARM-v1_6.zip
+- Apple Silicon / ARM64
+- Intel / x86_64
 
-Intel:
-AnthonysUBee512Launcher-Mac-Intel-v1_6.zip
-```
-
-Download and unzip the appropriate package, then open the launcher application.
+Extract the package and open the launcher application.
 
 The macOS builds are not currently Apple-notarised, so macOS may block the app the first time it is opened.
 
@@ -182,13 +128,7 @@ The macOS launcher is intended for an existing uBee512 setup and uses macOS-spec
 
 ## Running the Windows Version
 
-Download and extract:
-
-```text
-Builds/Windows/AnthonysUBee512Launcher-Windows-v1_6.zip
-```
-
-Then run the Windows launcher executable.
+Download the Windows ZIP from the latest GitHub Release, extract it, then run the launcher executable.
 
 The Windows version is intended for a Windows uBee512 setup and uses Windows-specific path handling.
 
@@ -228,12 +168,11 @@ The general release process is:
 2. test the source directly
 3. commit and push the source
 4. build the platform package
-5. test the packaged application
-6. copy the tested build into the appropriate `Builds/` folder
-7. recreate the downloadable ZIP if required
-8. commit and push the build
+5. create the platform ZIP package
+6. test the packaged application
+7. tag the release
+8. publish the ZIP through GitHub Releases
 9. update documentation if needed
-10. tag the release if appropriate
 
 ### Linux Build Example
 

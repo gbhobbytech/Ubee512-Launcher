@@ -1,15 +1,11 @@
 .venv/
 build/
 dist/
-*.spec
 __pycache__/
 *.pyc
 .DS_Store
 *.app
 *.zipbuild/
 
-.venv/
-build/
-dist/
-*.spec
-__pycache__/
+# Packaged release builds
+Builds/
